@@ -59,6 +59,7 @@ inputs:
       The default value (`.*`) means: get every artifact from every Workflow.
 
       Do not forget to escape the special characters.
+      If you want to match all workflow from a stage then you need to escape the `.` separator and the use the `.*` any characters regex like `{stage-name}\..*`.
     is_required: true
 
 - verbose: "false"

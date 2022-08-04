@@ -80,7 +80,7 @@ Let's see the following use-cases, the use cases first part is the demand, the s
 
 - As a developer, I would like to get the build artifact(s) of the _stage-2_'s _deployer_'s workflow and the _stage-1_'s _placeholder_'s workflow: `stage-1.placeholder,stage-2.deployer`. The two expressions are separated by a comma.
 
-- As a developer, I would like to retrieve already generated artifacts: `.*` or `"" (empty string)`. As the example shows, developers can use regex.
+- As a developer, I would like to retrieve already generated artifacts: `.*`. As the example shows, developers can use regex.
 
 - As a developer, I would like to retrieve the generated artifacts from the _stage-2_ stage: `stage-2\..*`.
 
