@@ -8,14 +8,12 @@ import (
 	"testing"
 	"time"
 
-	"github.com/stretchr/testify/mock"
-
-	"github.com/bitrise-steplib/bitrise-step-artifact-pull/mocks"
-
 	"github.com/bitrise-io/go-utils/log"
 	"github.com/bitrise-io/go-utils/pathutil"
-	"github.com/bitrise-steplib/bitrise-step-artifact-pull/api"
+	"github.com/bitrise-steplib/bitrise-step-pull-intermediate-files/api"
+	"github.com/bitrise-steplib/bitrise-step-pull-intermediate-files/mocks"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
 )
 
 const relativeDownloadPath = "_tmp"

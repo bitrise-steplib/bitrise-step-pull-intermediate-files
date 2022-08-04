@@ -1,4 +1,4 @@
-module github.com/bitrise-steplib/bitrise-step-artifact-pull
+module github.com/bitrise-steplib/bitrise-step-pull-intermediate-files
 
 go 1.17
 

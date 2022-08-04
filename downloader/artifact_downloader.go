@@ -13,7 +13,7 @@ import (
 	"github.com/bitrise-io/go-utils/filedownloader"
 	"github.com/bitrise-io/go-utils/log"
 	"github.com/bitrise-io/go-utils/retry"
-	"github.com/bitrise-steplib/bitrise-step-artifact-pull/api"
+	"github.com/bitrise-steplib/bitrise-step-pull-intermediate-files/api"
 )
 
 const (

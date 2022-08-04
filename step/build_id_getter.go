@@ -3,7 +3,7 @@ package step
 import (
 	"regexp"
 
-	"github.com/bitrise-steplib/bitrise-step-artifact-pull/model"
+	"github.com/bitrise-steplib/bitrise-step-pull-intermediate-files/model"
 )
 
 const DELIMITER = "."

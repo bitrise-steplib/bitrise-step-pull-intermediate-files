@@ -4,7 +4,7 @@ import (
 	"sort"
 	"testing"
 
-	"github.com/bitrise-steplib/bitrise-step-artifact-pull/model"
+	"github.com/bitrise-steplib/bitrise-step-pull-intermediate-files/model"
 	"github.com/stretchr/testify/assert"
 )
 

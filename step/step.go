@@ -11,10 +11,10 @@ import (
 	"github.com/bitrise-io/go-utils/env"
 	"github.com/bitrise-io/go-utils/log"
 	"github.com/bitrise-io/go-utils/pathutil"
-	"github.com/bitrise-steplib/bitrise-step-artifact-pull/api"
-	"github.com/bitrise-steplib/bitrise-step-artifact-pull/downloader"
-	"github.com/bitrise-steplib/bitrise-step-artifact-pull/export"
-	"github.com/bitrise-steplib/bitrise-step-artifact-pull/model"
+	"github.com/bitrise-steplib/bitrise-step-pull-intermediate-files/api"
+	"github.com/bitrise-steplib/bitrise-step-pull-intermediate-files/downloader"
+	"github.com/bitrise-steplib/bitrise-step-pull-intermediate-files/export"
+	"github.com/bitrise-steplib/bitrise-step-pull-intermediate-files/model"
 )
 
 const downloadDirPrefix = "_artifact_pull"

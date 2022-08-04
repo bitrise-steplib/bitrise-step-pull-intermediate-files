@@ -8,7 +8,7 @@ import (
 	"github.com/bitrise-io/go-utils/command"
 	"github.com/bitrise-io/go-utils/env"
 	"github.com/bitrise-io/go-utils/log"
-	"github.com/bitrise-steplib/bitrise-step-artifact-pull/step"
+	"github.com/bitrise-steplib/bitrise-step-pull-intermediate-files/step"
 )
 
 func main() {

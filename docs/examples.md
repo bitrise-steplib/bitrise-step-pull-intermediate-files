@@ -4,7 +4,7 @@
 
 ```yaml
 steps:
-  - git::https://github.com/bitrise-steplib/bitrise-step-artifact-pull.git@main:
+  - git::https://github.com/bitrise-steplib/bitrise-step-pull-intermediate-files.git@main:
       title: Pull artifacts
       inputs:
         - verbose: "true"
