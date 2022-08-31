@@ -2,9 +2,11 @@ package downloader
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"strings"
 	"time"
@@ -156,8 +158,12 @@ func (ad *ConcurrentArtifactDownloader) extractArchive(r io.Reader, targetDir st
 		Dir:   targetDir,
 	})
 
-	if err := cmd.Run(); err != nil {
-		return fmt.Errorf("%s failed: %s", cmd.PrintableCommandArgs(), err)
+	if out, err := cmd.RunAndReturnTrimmedCombinedOutput(); err != nil {
+		var exitErr *exec.ExitError
+		if errors.As(err, &exitErr) {
+			return fmt.Errorf("%s failed with exit code %d: %s", cmd.PrintableCommandArgs(), exitErr.ExitCode(), out)
+		}
+		return fmt.Errorf("%s failed: %w", cmd.PrintableCommandArgs(), err)
 	}
 
 	return nil
