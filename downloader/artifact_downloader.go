@@ -148,7 +148,8 @@ func (ad *ConcurrentArtifactDownloader) download(jobs <-chan downloadJob, result
 // extractArchive extracts an archive using the tar CLI tool by piping the archive to the command's input.
 func (ad *ConcurrentArtifactDownloader) extractArchive(r io.Reader, targetDir string) error {
 	tarArgs := []string{
-		"-x",      // -x: extract files from an archive: https://www.gnu.org/software/tar/manual/html_node/extract.html#SEC25
+		"-x", // -x: extract files from an archive: https://www.gnu.org/software/tar/manual/html_node/extract.html#SEC25
+		"-v",
 		"-f", "-", // -f "-": reads the archive from standard input: https://www.gnu.org/software/tar/manual/html_node/Device.html#SEC155
 	}
 	cmd := ad.CommandFactory.Create("tar", tarArgs, &command.Opts{
