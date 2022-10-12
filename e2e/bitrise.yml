@@ -5,7 +5,7 @@ app:
   envs:
   # Shared envs for every test workflow
   - BITRISEIO_FINISHED_STAGES: |-
-        [[
+        [
             {
                 "id": "e8741240-0acd-42ed-a3c4-c827d3d2db93",
                 "name": "stage-1-new",
