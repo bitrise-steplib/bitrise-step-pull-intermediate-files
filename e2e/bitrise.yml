@@ -5,43 +5,67 @@ app:
   envs:
   # Shared envs for every test workflow
   - BITRISEIO_FINISHED_STAGES: |-
-        [{
-            "id": "449d4000-dfb7-4673-8de2-51189af8866f",
-            "name": "stage-1-new",
-            "workflows": [{
-                "external_id": "6f49f5e2-e498-4088-a139-92e109da7abc",
-                "finished_at": "2022-07-27T22:29:11Z",
-                "id": "da8f2e61-d128-4242-be2c-73954055c559",
-                "name": "placeholder",
-                "started_at": "2022-07-27T22:29:10Z",
-                "status": "succeeded"
-            }, {
-                "external_id": "825664aa-3ec9-4a75-8c02-33459f82a232",
-                "finished_at": "2022-07-27T22:29:21Z",
-                "id": "cd73e2c0-787a-4a6c-b55c-35ce567184ea",
-                "name": "textfile_generator-new",
-                "started_at": "2022-07-27T22:29:09Z",
-                "status": "succeeded"
-            }]
-        }, {
-            "id": "83ebb220-e3e1-4f31-955e-363227bf0765",
-            "name": "stage-2-new",
-            "workflows": [{
-                "external_id": "323aab5c-39b4-4cd5-974e-7fddf47ce65e",
-                "finished_at": "2022-07-27T22:30:10Z",
-                "id": "e5b0e93c-e139-48af-8549-72e6a4f3119a",
-                "name": "deployer-new",
-                "started_at": "2022-07-27T22:29:49Z",
-                "status": "succeeded"
-            }, {
-                "external_id": "4cd4b6d5-7147-4315-a9be-4a1f8d4baae8",
-                "finished_at": "2022-07-27T22:30:05Z",
-                "id": "062304f6-5780-41d4-a23e-c64bf18b56d5",
-                "name": "textfile_generator-new",
-                "started_at": "2022-07-27T22:29:53Z",
-                "status": "succeeded"
-            }]
-        }]
+        [[
+            {
+                "id": "e8741240-0acd-42ed-a3c4-c827d3d2db93",
+                "name": "stage-1-new",
+                "workflows":
+                [
+                    {
+                        "credit_cost": 2,
+                        "external_id": "d686bed6-f45f-4c0f-891b-47c736d03274",
+                        "finished_at": "2022-10-12T15:09:16Z",
+                        "id": "e18f50d7-1908-44ca-a04e-159da6ed76ce",
+                        "name": "placeholder",
+                        "started_at": "2022-10-12T15:09:15Z",
+                        "status": "succeeded"
+                    },
+                    {
+                        "credit_cost": 2,
+                        "external_id": "94ae31e3-6bd7-4bd9-a469-f0be00c0f894",
+                        "finished_at": "2022-10-12T15:09:33Z",
+                        "id": "e41d3e4d-7a8e-4c42-8490-db9fa5f04aa1",
+                        "name": "textfile_generator-new",
+                        "started_at": "2022-10-12T15:09:17Z",
+                        "status": "succeeded"
+                    }
+                ]
+            },
+            {
+                "id": "4884b564-ea63-43cd-a19f-25e12a7c6d4f",
+                "name": "stage-2-new",
+                "workflows":
+                [
+                    {
+                        "credit_cost": null,
+                        "external_id": "c9b11e6d-92bb-44a4-ac9a-4edc51833e7a",
+                        "finished_at": "2022-10-12T15:09:52Z",
+                        "id": "ffea37ad-3e67-48ab-9e87-02f171079e06",
+                        "name": "deployer-new",
+                        "started_at": "2022-10-12T15:09:35Z",
+                        "status": "succeeded"
+                    },
+                    {
+                        "credit_cost": 2,
+                        "external_id": "542efe35-5ac9-4ad1-89c4-b1b06145fcb3",
+                        "finished_at": "2022-10-12T15:09:52Z",
+                        "id": "0ccea689-8bdc-4c14-8b24-024effeabe6e",
+                        "name": "textfile_generator-new",
+                        "started_at": "2022-10-12T15:09:37Z",
+                        "status": "succeeded"
+                    },
+                    {
+                        "credit_cost": 2,
+                        "external_id": "74a3a1b5-1299-4315-aff8-a3af23b75fe9",
+                        "finished_at": "2022-10-12T15:09:50Z",
+                        "id": "8477150c-a9f9-407f-bce1-9544fcbbb050",
+                        "name": "archive_generator",
+                        "started_at": "2022-10-12T15:09:37Z",
+                        "status": "succeeded"
+                    }
+                ]
+            }
+        ]
   - BITRISE_APP_SLUG: b520099804d7e71a
   - BITRISE_AUTH_SERVICE_ARTIFACT_PULL_CLIENT_SECRET: $BITRISE_AUTH_SERVICE_ARTIFACT_PULL_CLIENT_SECRET
 
@@ -67,6 +91,7 @@ workflows:
             EXPORT_OPTIONS_PLIST
             TEST_JSON
             TEXT_FILE_TXT
+            ARCHIVE_TAR
 
   test_download_specific_stage_artifacts:
     before_run:
