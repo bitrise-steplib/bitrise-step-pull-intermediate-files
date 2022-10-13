@@ -82,6 +82,7 @@ workflows:
             EXPORT_OPTIONS_PLIST
             TEST_JSON
             TEXT_FILE_TXT
+        - dirs: |-
             ARCHIVE_TAR
 
   test_download_specific_stage_artifacts:
