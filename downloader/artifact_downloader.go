@@ -2,9 +2,11 @@ package downloader
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"strings"
 	"time"
@@ -147,16 +149,16 @@ func (ad *ConcurrentArtifactDownloader) download(jobs <-chan downloadJob, result
 
 // extractArchive extracts an archive using the tar CLI tool by piping the archive to the command's input.
 func (ad *ConcurrentArtifactDownloader) extractArchive(r io.Reader, targetDir string) error {
-	tarArgs := []string{
-		"-x",      // -x: extract files from an archive: https://www.gnu.org/software/tar/manual/html_node/extract.html#SEC25
-		"-f", "-", // -f "-": reads the archive from standard input: https://www.gnu.org/software/tar/manual/html_node/Device.html#SEC155
-	}
-	cmd := ad.CommandFactory.Create("tar", tarArgs, &command.Opts{
+	cmd := ad.CommandFactory.Create("unzip", []string{}, &command.Opts{
 		Stdin: r,
 		Dir:   targetDir,
 	})
 
 	if err := cmd.Run(); err != nil {
+		var exitErr *exec.ExitError
+		if errors.As(err, &exitErr) {
+			return fmt.Errorf("command failed with exit status %d (%s): %w", exitErr.ExitCode(), cmd.PrintableCommandArgs(), errors.New("check the command's output for details"))
+		}
 		return fmt.Errorf("%s failed: %s", cmd.PrintableCommandArgs(), err)
 	}
 

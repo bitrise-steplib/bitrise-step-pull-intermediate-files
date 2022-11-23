@@ -6,54 +6,54 @@ app:
   # Shared envs for every test workflow
   - BITRISEIO_FINISHED_STAGES: |-
         [{
-            "id": "730fde2f-669d-4ed3-9d0c-49fb1e62cbb4",
+            "id": "996e8a18-947e-4bed-940d-c65e8439245f",
             "name": "stage-1-new",
             "workflows": [{
                 "credit_cost": 2,
-                "external_id": "0f8ec208-6496-470c-9c5b-dacd8bdd8b01",
-                "finished_at": "2022-10-12T23:27:19Z",
-                "id": "3dceca00-535e-4bf5-bc40-48815ca79ed9",
+                "external_id": "2ffa98aa-92d8-456f-9ba4-4d1d6548cfb3",
+                "finished_at": "2022-11-14T06:28:15Z",
+                "id": "eab6d91a-b3ff-4744-9f2a-ac15b8acf3b2",
                 "name": "placeholder",
-                "started_at": "2022-10-12T23:27:18Z",
+                "started_at": "2022-11-14T06:28:14Z",
                 "status": "succeeded"
             },
             {
                 "credit_cost": 2,
-                "external_id": "ba1c7066-a7a1-43cf-87ba-34f104e4b846",
-                "finished_at": "2022-10-12T23:27:29Z",
-                "id": "3590eaf3-a1da-44cd-b63d-69fa0a8e8615",
+                "external_id": "08c8cc72-e98d-47de-92a5-09b6bd7d55df",
+                "finished_at": "2022-11-14T06:28:28Z",
+                "id": "095f534e-d98c-41a8-9d0e-6959380ed039",
                 "name": "textfile_generator-new",
-                "started_at": "2022-10-12T23:27:19Z",
+                "started_at": "2022-11-14T06:28:14Z",
                 "status": "succeeded"
             }]
         }, {
-            "id": "747fed17-bc9f-4dff-ac8a-974f8f80e55c",
+            "id": "3b5136b6-92c6-4576-aedc-9e21cba8432c",
             "name": "stage-2-new",
             "workflows": [{
                 "credit_cost": null,
-                "external_id": "87e08554-a47a-4690-9a19-5525a00d2276",
-                "finished_at": "2022-10-12T23:27:52Z",
-                "id": "7b079fd0-c41f-4ab4-bc3c-0e023d800858",
+                "external_id": "00c49d06-d1d8-4ee9-a0ce-ee340228740d",
+                "finished_at": "2022-11-14T06:29:14Z",
+                "id": "48574051-24f6-4571-9aaa-d1589f7cece4",
                 "name": "deployer-new",
-                "started_at": "2022-10-12T23:27:34Z",
+                "started_at": "2022-11-14T06:28:58Z",
                 "status": "succeeded"
             },
             {
                 "credit_cost": 2,
-                "external_id": "0d4f0389-c985-4f74-85cc-3ad5a6ef46b9",
-                "finished_at": "2022-10-12T23:27:47Z",
-                "id": "1bb2b686-2096-4308-9851-b6a1a846fcda",
+                "external_id": "bb1d9f29-e85f-4ace-a4a7-592901eb9f61",
+                "finished_at": "2022-11-14T06:28:43Z",
+                "id": "b7cff818-bbbb-4372-9d0c-f800660408e8",
                 "name": "textfile_generator-new",
-                "started_at": "2022-10-12T23:27:37Z",
+                "started_at": "2022-11-14T06:28:30Z",
                 "status": "succeeded"
             },
             {
                 "credit_cost": 2,
-                "external_id": "4378c148-77f0-4b2c-ab25-054664569b16",
-                "finished_at": "2022-10-12T23:27:42Z",
-                "id": "5c991fc2-c009-4838-88b9-172e19fc6b98",
+                "external_id": "f2f498a1-c091-405c-9844-294938ba6339",
+                "finished_at": "2022-11-14T06:28:43Z",
+                "id": "74dd46a3-dc0b-43f2-9cb5-a3d4ffec0e83",
                 "name": "archive_generator",
-                "started_at": "2022-10-12T23:27:32Z",
+                "started_at": "2022-11-14T06:28:30Z",
                 "status": "succeeded"
             }]
         }]
@@ -83,7 +83,7 @@ workflows:
             TEST_JSON
             TEXT_FILE_TXT
         - dirs: |-
-            ARCHIVE_TAR
+            ARCHIVE_ZIP
 
   test_download_specific_stage_artifacts:
     before_run:
@@ -130,7 +130,7 @@ workflows:
                 --data "client_secret=$BITRISE_AUTH_SERVICE_ARTIFACT_PULL_CLIENT_SECRET" \
                 --data "grant_type=urn:ietf:params:oauth:grant-type:uma-ticket" \
                 --data "scope=build_artifact:read build:read app:read" \
-                --data "claim_token=ewogICJidWlsZF9pZHMiOiBbCiAgICAiMGY4ZWMyMDgtNjQ5Ni00NzBjLTljNWItZGFjZDhiZGQ4YjAxIiwKICAgICJiYTFjNzA2Ni1hN2ExLTQzY2YtODdiYS0zNGYxMDRlNGI4NDYiLAogICAgIjg3ZTA4NTU0LWE0N2EtNDY5MC05YTE5LTU1MjVhMDBkMjI3NiIsCiAgICAiMGQ0ZjAzODktYzk4NS00Zjc0LTg1Y2MtM2FkNWE2ZWY0NmI5IiwKICAgICI0Mzc4YzE0OC03N2YwLTRiMmMtYWIyNS0wNTQ2NjQ1NjliMTYiCiAgXSwKICAicGlwZWxpbmVfaWQiOiBbCiAgICAiNWI5MTY1OTAtM2U4Zi00MTE5LTk1M2EtN2IzYzFmNmU0NGQ3IgogIF0KfQ==" \
+                --data "claim_token=ewogICJidWlsZF9pZHMiOiBbCiAgICAiMmZmYTk4YWEtOTJkOC00NTZmLTliYTQtNGQxZDY1NDhjZmIzIiwKICAgICIwOGM4Y2M3Mi1lOThkLTQ3ZGUtOTJhNS0wOWI2YmQ3ZDU1ZGYiLAogICAgIjAwYzQ5ZDA2LWQxZDgtNGVlOS1hMGNlLWVlMzQwMjI4NzQwZCIsCiAgICAiYmIxZDlmMjktZTg1Zi00YWNlLWE0YTctNTkyOTAxZWI5ZjYxIiwKICAgICJmMmY0OThhMS1jMDkxLTQwNWMtOTg0NC0yOTQ5MzhiYTYzMzkiCiAgXSwKICAicGlwZWxpbmVfaWQiOiBbCiAgICAiMjg3ZWU1OGQtMmI3Ny00MDJhLWFhMWMtODM1ZGNjMGNlOTcwIgogIF0KfQ==" \
                 --data "claim_token_format=urn:ietf:params:oauth:token-type:jwt" \
                 --data "audience=bitrise-api")
 
