@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"io"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -84,6 +85,30 @@ func (ad *ConcurrentArtifactDownloader) downloadParallel(artifacts []api.Artifac
 	return downloadResults, nil
 }
 
+func (ad *ConcurrentArtifactDownloader) download(jobs <-chan downloadJob, results chan<- ArtifactDownloadResult) {
+	for j := range jobs {
+		var fileFullPath string
+		var err error
+
+		switch {
+		case j.ResponseModel.IntermediateFileInfo.IsDir && filepath.Ext(j.ResponseModel.Title) == ".tar":
+			// Support deploy-to-bitrise-io version 2.1.2 and 2.1.3, which creates tar archives.
+			fileFullPath, err = ad.downloadAndExtractTarArchive(j.TargetDir, j.ResponseModel.Title, j.ResponseModel.DownloadURL)
+		case j.ResponseModel.IntermediateFileInfo.IsDir:
+			fileFullPath, err = ad.downloadAndExtractZipArchive(j.TargetDir, j.ResponseModel.Title, j.ResponseModel.DownloadURL)
+		default:
+			fileFullPath, err = ad.downloadFile(j.TargetDir, j.ResponseModel.Title, j.ResponseModel.DownloadURL)
+		}
+
+		if err != nil {
+			results <- ArtifactDownloadResult{DownloadError: err, DownloadURL: j.ResponseModel.DownloadURL}
+			return
+		}
+
+		results <- ArtifactDownloadResult{DownloadPath: fileFullPath, DownloadURL: j.ResponseModel.DownloadURL, EnvKey: j.ResponseModel.IntermediateFileInfo.EnvKey}
+	}
+}
+
 func (ad *ConcurrentArtifactDownloader) downloadFile(targetDir, fileName, downloadURL string) (string, error) {
 	fileFullPath := filepath.Join(targetDir, fileName)
 
@@ -98,9 +123,8 @@ func (ad *ConcurrentArtifactDownloader) downloadFile(targetDir, fileName, downlo
 	return fileFullPath, nil
 }
 
-func (ad *ConcurrentArtifactDownloader) downloadDirectory(targetDir, fileName, downloadURL string) (string, error) {
+func (ad *ConcurrentArtifactDownloader) downloadAndExtractZipArchive(targetDir, fileName, downloadURL string) (string, error) {
 	fileFullPath, err := ad.downloadFile(targetDir, fileName, downloadURL)
-
 	if err != nil {
 		return "", err
 	}
@@ -114,35 +138,14 @@ func (ad *ConcurrentArtifactDownloader) downloadDirectory(targetDir, fileName, d
 		return "", err
 	}
 
-	if err := ad.extractArchive(fileFullPath, dirPath); err != nil {
+	if err := ad.extractZipArchive(fileFullPath, dirPath); err != nil {
 		return "", err
 	}
 
 	return dirPath, nil
 }
 
-func (ad *ConcurrentArtifactDownloader) download(jobs <-chan downloadJob, results chan<- ArtifactDownloadResult) {
-	for j := range jobs {
-		var fileFullPath string
-		var err error
-
-		if j.ResponseModel.IntermediateFileInfo.IsDir {
-			fileFullPath, err = ad.downloadDirectory(j.TargetDir, j.ResponseModel.Title, j.ResponseModel.DownloadURL)
-		} else {
-			fileFullPath, err = ad.downloadFile(j.TargetDir, j.ResponseModel.Title, j.ResponseModel.DownloadURL)
-		}
-
-		if err != nil {
-			results <- ArtifactDownloadResult{DownloadError: err, DownloadURL: j.ResponseModel.DownloadURL}
-			return
-		}
-
-		results <- ArtifactDownloadResult{DownloadPath: fileFullPath, DownloadURL: j.ResponseModel.DownloadURL, EnvKey: j.ResponseModel.IntermediateFileInfo.EnvKey}
-	}
-}
-
-// extractArchive extracts an archive using the tar CLI tool by piping the archive to the command's input.
-func (ad *ConcurrentArtifactDownloader) extractArchive(archivePath string, targetDir string) error {
+func (ad *ConcurrentArtifactDownloader) extractZipArchive(archivePath string, targetDir string) error {
 	cmd := ad.CommandFactory.Create("unzip", []string{archivePath}, &command.Opts{Dir: targetDir})
 
 	if out, err := cmd.RunAndReturnTrimmedCombinedOutput(); err != nil {
@@ -151,6 +154,51 @@ func (ad *ConcurrentArtifactDownloader) extractArchive(archivePath string, targe
 			return fmt.Errorf("command failed with exit status %d (%s): %w", exitErr.ExitCode(), cmd.PrintableCommandArgs(), errors.New(out))
 		}
 		return fmt.Errorf("%s failed: %w", cmd.PrintableCommandArgs(), err)
+	}
+
+	return nil
+}
+
+func (ad *ConcurrentArtifactDownloader) downloadAndExtractTarArchive(targetDir, fileName, downloadURL string) (string, error) {
+	client := retry.NewHTTPClient()
+
+	resp, err := client.Get(downloadURL)
+	if err != nil {
+		return "", err
+	}
+
+	fmt.Println("targetDir: ", targetDir)
+
+	dirName := strings.TrimSuffix(fileName, filepath.Ext(fileName))
+	dirPath := filepath.Join(targetDir, dirName)
+
+	if err := os.MkdirAll(dirPath, os.ModePerm); err != nil {
+		return "", err
+	}
+
+	if err := ad.extractTarArchive(resp.Body, dirPath); err != nil {
+		return "", err
+	}
+
+	if err := resp.Body.Close(); err != nil {
+		log.Warnf("Failed to close response body: %s", err)
+	}
+
+	return dirPath, nil
+}
+
+func (ad *ConcurrentArtifactDownloader) extractTarArchive(r io.Reader, targetDir string) error {
+	tarArgs := []string{
+		"-x",      // -x: extract files from an archive: https://www.gnu.org/software/tar/manual/html_node/extract.html#SEC25
+		"-f", "-", // -f "-": reads the archive from standard input: https://www.gnu.org/software/tar/manual/html_node/Device.html#SEC155
+	}
+	cmd := ad.CommandFactory.Create("tar", tarArgs, &command.Opts{
+		Stdin: r,
+		Dir:   targetDir,
+	})
+
+	if err := cmd.Run(); err != nil {
+		return fmt.Errorf("%s failed: %s", cmd.PrintableCommandArgs(), err)
 	}
 
 	return nil
