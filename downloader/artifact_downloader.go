@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"io"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -100,9 +99,8 @@ func (ad *ConcurrentArtifactDownloader) downloadFile(targetDir, fileName, downlo
 }
 
 func (ad *ConcurrentArtifactDownloader) downloadDirectory(targetDir, fileName, downloadURL string) (string, error) {
-	client := retry.NewHTTPClient()
+	fileFullPath, err := ad.downloadFile(targetDir, fileName, downloadURL)
 
-	resp, err := client.Get(downloadURL)
 	if err != nil {
 		return "", err
 	}
@@ -116,12 +114,8 @@ func (ad *ConcurrentArtifactDownloader) downloadDirectory(targetDir, fileName, d
 		return "", err
 	}
 
-	if err := ad.extractArchive(resp.Body, dirPath); err != nil {
+	if err := ad.extractArchive(fileFullPath, dirPath); err != nil {
 		return "", err
-	}
-
-	if err := resp.Body.Close(); err != nil {
-		log.Warnf("Failed to close response body: %s", err)
 	}
 
 	return dirPath, nil
@@ -148,18 +142,15 @@ func (ad *ConcurrentArtifactDownloader) download(jobs <-chan downloadJob, result
 }
 
 // extractArchive extracts an archive using the tar CLI tool by piping the archive to the command's input.
-func (ad *ConcurrentArtifactDownloader) extractArchive(r io.Reader, targetDir string) error {
-	cmd := ad.CommandFactory.Create("unzip", []string{}, &command.Opts{
-		Stdin: r,
-		Dir:   targetDir,
-	})
+func (ad *ConcurrentArtifactDownloader) extractArchive(archivePath string, targetDir string) error {
+	cmd := ad.CommandFactory.Create("unzip", []string{archivePath}, &command.Opts{Dir: targetDir})
 
-	if err := cmd.Run(); err != nil {
+	if out, err := cmd.RunAndReturnTrimmedCombinedOutput(); err != nil {
 		var exitErr *exec.ExitError
 		if errors.As(err, &exitErr) {
-			return fmt.Errorf("command failed with exit status %d (%s): %w", exitErr.ExitCode(), cmd.PrintableCommandArgs(), errors.New("check the command's output for details"))
+			return fmt.Errorf("command failed with exit status %d (%s): %w", exitErr.ExitCode(), cmd.PrintableCommandArgs(), errors.New(out))
 		}
-		return fmt.Errorf("%s failed: %s", cmd.PrintableCommandArgs(), err)
+		return fmt.Errorf("%s failed: %w", cmd.PrintableCommandArgs(), err)
 	}
 
 	return nil
