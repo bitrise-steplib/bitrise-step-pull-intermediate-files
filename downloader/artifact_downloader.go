@@ -145,20 +145,6 @@ func (ad *ConcurrentArtifactDownloader) downloadAndExtractZipArchive(targetDir, 
 	return dirPath, nil
 }
 
-func (ad *ConcurrentArtifactDownloader) extractZipArchive(archivePath string, targetDir string) error {
-	cmd := ad.CommandFactory.Create("unzip", []string{archivePath}, &command.Opts{Dir: targetDir})
-
-	if out, err := cmd.RunAndReturnTrimmedCombinedOutput(); err != nil {
-		var exitErr *exec.ExitError
-		if errors.As(err, &exitErr) {
-			return fmt.Errorf("command failed with exit status %d (%s): %w", exitErr.ExitCode(), cmd.PrintableCommandArgs(), errors.New(out))
-		}
-		return fmt.Errorf("%s failed: %w", cmd.PrintableCommandArgs(), err)
-	}
-
-	return nil
-}
-
 func (ad *ConcurrentArtifactDownloader) downloadAndExtractTarArchive(targetDir, fileName, downloadURL string) (string, error) {
 	client := retry.NewHTTPClient()
 
@@ -187,6 +173,20 @@ func (ad *ConcurrentArtifactDownloader) downloadAndExtractTarArchive(targetDir, 
 	return dirPath, nil
 }
 
+func (ad *ConcurrentArtifactDownloader) extractZipArchive(archivePath string, targetDir string) error {
+	cmd := ad.CommandFactory.Create("unzip", []string{archivePath}, &command.Opts{Dir: targetDir})
+
+	if out, err := cmd.RunAndReturnTrimmedCombinedOutput(); err != nil {
+		var exitErr *exec.ExitError
+		if errors.As(err, &exitErr) {
+			return fmt.Errorf("command failed with exit status %d (%s): %w", exitErr.ExitCode(), cmd.PrintableCommandArgs(), errors.New(out))
+		}
+		return fmt.Errorf("%s failed: %w", cmd.PrintableCommandArgs(), err)
+	}
+
+	return nil
+}
+
 func (ad *ConcurrentArtifactDownloader) extractTarArchive(r io.Reader, targetDir string) error {
 	tarArgs := []string{
 		"-x",      // -x: extract files from an archive: https://www.gnu.org/software/tar/manual/html_node/extract.html#SEC25
@@ -197,8 +197,12 @@ func (ad *ConcurrentArtifactDownloader) extractTarArchive(r io.Reader, targetDir
 		Dir:   targetDir,
 	})
 
-	if err := cmd.Run(); err != nil {
-		return fmt.Errorf("%s failed: %s", cmd.PrintableCommandArgs(), err)
+	if out, err := cmd.RunAndReturnTrimmedCombinedOutput(); err != nil {
+		var exitErr *exec.ExitError
+		if errors.As(err, &exitErr) {
+			return fmt.Errorf("command failed with exit status %d (%s): %w", exitErr.ExitCode(), cmd.PrintableCommandArgs(), errors.New(out))
+		}
+		return fmt.Errorf("%s failed: %w", cmd.PrintableCommandArgs(), err)
 	}
 
 	return nil
