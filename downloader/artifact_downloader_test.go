@@ -108,10 +108,10 @@ func Test_DownloadAndSaveDirectoryArtifacts(t *testing.T) {
 	}
 
 	cmd := new(mocks.Command)
-	cmd.On("Run").Return(nil).Once()
+	cmd.On("RunAndReturnTrimmedCombinedOutput").Return("", nil).Once()
 
 	cmdFactory := new(mocks.Factory)
-	cmdFactory.On("Create", "unzip", []string{}, mock.Anything).Return(cmd).Once()
+	cmdFactory.On("Create", "unzip", mock.Anything, mock.Anything).Return(cmd).Once()
 
 	artifactDownloader := NewConcurrentArtifactDownloader(5*time.Minute, log.NewLogger(), cmdFactory)
 
