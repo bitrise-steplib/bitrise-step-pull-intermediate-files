@@ -177,16 +177,7 @@ func (ad *ConcurrentArtifactDownloader) downloadAndExtractTarArchive(targetDir, 
 
 func (ad *ConcurrentArtifactDownloader) extractZipArchive(archivePath string, targetDir string) error {
 	cmd := ad.CommandFactory.Create("unzip", []string{archivePath}, &command.Opts{Dir: targetDir})
-
-	if out, err := cmd.RunAndReturnTrimmedCombinedOutput(); err != nil {
-		var exitErr *exec.ExitError
-		if errors.As(err, &exitErr) {
-			return fmt.Errorf("command failed with exit status %d (%s): %w", exitErr.ExitCode(), cmd.PrintableCommandArgs(), errors.New(out))
-		}
-		return fmt.Errorf("%s failed: %w", cmd.PrintableCommandArgs(), err)
-	}
-
-	return nil
+	return ad.runExtractionCommand(cmd)
 }
 
 func (ad *ConcurrentArtifactDownloader) extractTarArchive(r io.Reader, targetDir string) error {
@@ -198,7 +189,10 @@ func (ad *ConcurrentArtifactDownloader) extractTarArchive(r io.Reader, targetDir
 		Stdin: r,
 		Dir:   targetDir,
 	})
+	return ad.runExtractionCommand(cmd)
+}
 
+func (ad *ConcurrentArtifactDownloader) runExtractionCommand(cmd command.Command) error {
 	if out, err := cmd.RunAndReturnTrimmedCombinedOutput(); err != nil {
 		var exitErr *exec.ExitError
 		if errors.As(err, &exitErr) {
