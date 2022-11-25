@@ -14,6 +14,7 @@ import (
 	"github.com/bitrise-io/go-utils/command"
 	"github.com/bitrise-io/go-utils/filedownloader"
 	"github.com/bitrise-io/go-utils/log"
+	"github.com/bitrise-io/go-utils/pathutil"
 	"github.com/bitrise-io/go-utils/retry"
 	"github.com/bitrise-steplib/bitrise-step-pull-intermediate-files/api"
 )
@@ -124,7 +125,12 @@ func (ad *ConcurrentArtifactDownloader) downloadFile(targetDir, fileName, downlo
 }
 
 func (ad *ConcurrentArtifactDownloader) downloadAndExtractZipArchive(targetDir, fileName, downloadURL string) (string, error) {
-	fileFullPath, err := ad.downloadFile(targetDir, fileName, downloadURL)
+	tmpDir, err := pathutil.NormalizedOSTempDirPath("pull-intermediate-files")
+	if err != nil {
+		return "", err
+	}
+
+	fileFullPath, err := ad.downloadFile(tmpDir, fileName, downloadURL)
 	if err != nil {
 		return "", err
 	}
@@ -163,7 +169,7 @@ func (ad *ConcurrentArtifactDownloader) downloadAndExtractTarArchive(targetDir, 
 	}
 
 	if err := resp.Body.Close(); err != nil {
-		log.Warnf("Failed to close response body: %s", err)
+		ad.Logger.Warnf("Failed to close response body: %s", err)
 	}
 
 	return dirPath, nil
