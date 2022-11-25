@@ -129,8 +129,6 @@ func (ad *ConcurrentArtifactDownloader) downloadAndExtractZipArchive(targetDir, 
 		return "", err
 	}
 
-	fmt.Println("targetDir: ", targetDir)
-
 	dirName := strings.TrimSuffix(fileName, filepath.Ext(fileName))
 	dirPath := filepath.Join(targetDir, dirName)
 
@@ -152,8 +150,6 @@ func (ad *ConcurrentArtifactDownloader) downloadAndExtractTarArchive(targetDir, 
 	if err != nil {
 		return "", err
 	}
-
-	fmt.Println("targetDir: ", targetDir)
 
 	dirName := strings.TrimSuffix(fileName, filepath.Ext(fileName))
 	dirPath := filepath.Join(targetDir, dirName)
