@@ -77,7 +77,7 @@ func (lister ArtifactLister) ListIntermediateFileDetails(appSlug string, buildSl
 	for i := 1; i <= len(buildSlugs); i++ {
 		res := <-listResults
 		if res.err != nil {
-			lister.logger.Warnf("Failed to list artifacts for build %s: %w", res.buildSlug, res.err)
+			lister.logger.Warnf("Failed to list artifacts for build %s: %s", res.buildSlug, res.err)
 			failedBuildSlugs = append(failedBuildSlugs, res.buildSlug)
 		} else {
 			artifacts = append(artifacts, res.artifacts...)
