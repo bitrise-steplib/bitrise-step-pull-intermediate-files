@@ -95,8 +95,8 @@ func (lister ArtifactLister) ListIntermediateFileDetails(appSlug string, buildSl
 func (lister ArtifactLister) listArtifactsWorker(appSlug string, buildSlugs chan string, results chan listArtifactsResult) {
 	for buildSlug := range buildSlugs {
 		if buildSlug == "" {
-			lister.logger.Warnf("Build slug is empty, skipping...")
-			continue
+			lister.logger.Warnf("Build slug is empty")
+			// Continue because the results channel is expected to have len(buildSlugs) items. Error will be handled later.
 		}
 
 		lister.logger.Debugf("Listing artifacts for build: https://app.bitrise.io/build/%v", buildSlug)
