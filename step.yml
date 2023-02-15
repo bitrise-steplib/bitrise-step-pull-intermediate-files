@@ -48,9 +48,9 @@ inputs:
   opts:
     title: Artifact source
     summary: |-
-      A comma (`,`) separated list of the Stage and Workflow paths, used to specify which workflows' artifacts to download.
+      A comma (`,`) separated list of the Stage and Workflow paths (`{stage}.{workflow}`), used to specify which workflows' artifacts to download.
     description: |-
-      A comma (`,`) separated list of the Stage and Workflow paths, used to specify which workflows' artifacts to download.
+      A comma (`,`) separated list of the Stage and Workflow paths (`{stage}.{workflow}`), used to specify which workflows' artifacts to download.
 
       The input uses a `{stage}.{workflow}` syntax.
       The dot character (`.`) is the delimiter between the Stage and the Workflow.
