@@ -11,12 +11,13 @@ import (
 	"strings"
 	"time"
 
+	"github.com/bitrise-steplib/bitrise-step-pull-intermediate-files/api"
+
 	"github.com/bitrise-io/go-utils/command"
 	"github.com/bitrise-io/go-utils/filedownloader"
 	"github.com/bitrise-io/go-utils/log"
 	"github.com/bitrise-io/go-utils/pathutil"
 	"github.com/bitrise-io/go-utils/retry"
-	"github.com/bitrise-steplib/bitrise-step-pull-intermediate-files/api"
 )
 
 const (
@@ -176,14 +177,15 @@ func (ad *ConcurrentArtifactDownloader) downloadAndExtractTarArchive(targetDir, 
 }
 
 func (ad *ConcurrentArtifactDownloader) extractZipArchive(archivePath string, targetDir string) error {
-	cmd := ad.CommandFactory.Create("unzip", []string{archivePath}, &command.Opts{Dir: targetDir})
+	cmd := ad.CommandFactory.Create("unzip", []string{"-o", archivePath}, &command.Opts{Dir: targetDir})
 	return ad.runExtractionCommand(cmd)
 }
 
 func (ad *ConcurrentArtifactDownloader) extractTarArchive(r io.Reader, targetDir string) error {
 	tarArgs := []string{
-		"-x",      // -x: extract files from an archive: https://www.gnu.org/software/tar/manual/html_node/extract.html#SEC25
-		"-f", "-", // -f "-": reads the archive from standard input: https://www.gnu.org/software/tar/manual/html_node/Device.html#SEC155
+		"-x",          // -x: extract files from an archive: https://www.gnu.org/software/tar/manual/html_node/extract.html#SEC25
+		"--overwrite", // https://man7.org/linux/man-pages/man1/tar.1.html
+		"-f", "-",     // -f "-": reads the archive from standard input: https://www.gnu.org/software/tar/manual/html_node/Device.html#SEC155
 	}
 	cmd := ad.CommandFactory.Create("tar", tarArgs, &command.Opts{
 		Stdin: r,
