@@ -183,9 +183,8 @@ func (ad *ConcurrentArtifactDownloader) extractZipArchive(archivePath string, ta
 
 func (ad *ConcurrentArtifactDownloader) extractTarArchive(r io.Reader, targetDir string) error {
 	tarArgs := []string{
-		"-x",          // -x: extract files from an archive: https://www.gnu.org/software/tar/manual/html_node/extract.html#SEC25
-		"--overwrite", // https://man7.org/linux/man-pages/man1/tar.1.html
-		"-f", "-",     // -f "-": reads the archive from standard input: https://www.gnu.org/software/tar/manual/html_node/Device.html#SEC155
+		"-x",      // -x: extract files from an archive: https://www.gnu.org/software/tar/manual/html_node/extract.html#SEC25
+		"-f", "-", // -f "-": reads the archive from standard input: https://www.gnu.org/software/tar/manual/html_node/Device.html#SEC155
 	}
 	cmd := ad.CommandFactory.Create("tar", tarArgs, &command.Opts{
 		Stdin: r,
