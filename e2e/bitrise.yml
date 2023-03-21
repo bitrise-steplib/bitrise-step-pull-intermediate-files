@@ -5,98 +5,98 @@ app:
   envs:
   # Shared envs for every test workflow
   - BITRISEIO_FINISHED_STAGES: |-
-      [
-        {
-          "created_at": "2023-03-21T14:06:15.37761Z",
-          "finished_at": "2023-03-21T14:06:38Z",
-          "id": "7735fa76-35c3-47a4-80d5-bfe9e4ad7187",
-          "name": "stage-1",
-          "put_on_hold_at": null,
-          "started_at": "2023-03-21T14:06:16Z",
-          "status": "succeeded",
-          "triggered_at": "2023-03-21T14:06:15.827283Z",
-          "workflows": [
-            {
-              "credit_cost": 2,
-              "external_id": "f48f9776-65f3-462c-860c-2331e012d3fe",
-              "finished_at": "2023-03-21T14:06:34Z",
-              "id": "ba3e65fb-b70f-410b-94bc-029b847c2c71",
-              "name": "placeholder",
-              "started_at": "2023-03-21T14:06:17Z",
-              "status": "succeeded"
-            },
-            {
-              "credit_cost": 2,
-              "external_id": "86edd622-9eba-4946-94ea-63e6d31def5a",
-              "finished_at": "2023-03-21T14:06:38Z",
-              "id": "ef4ba9c9-a21e-4a51-a2d3-97f166f677eb",
-              "name": "textfile_generator",
-              "started_at": "2023-03-21T14:06:16Z",
-              "status": "succeeded"
-            }
-          ]
-        },
-        {
-          "created_at": "2023-03-21T14:06:15.37761Z",
-          "finished_at": "2023-03-21T14:07:43Z",
-          "id": "0644d087-f5cd-440e-841e-c7d9e2b04c6f",
-          "name": "stage-2",
-          "put_on_hold_at": null,
-          "started_at": "2023-03-21T14:06:40Z",
-          "status": "succeeded",
-          "triggered_at": "2023-03-21T14:06:39.067834Z",
-          "workflows": [
-            {
-              "credit_cost": 2,
-              "external_id": "1de017dc-1f82-40ab-babc-e0f046f97f2d",
-              "finished_at": "2023-03-21T14:07:43Z",
-              "id": "3aefc75d-9395-4077-b2ef-ee841c3f74c8",
-              "name": "deployer",
-              "started_at": "2023-03-21T14:07:19Z",
-              "status": "succeeded"
-            },
-            {
-              "credit_cost": 2,
-              "external_id": "d85dfcaf-06e6-4a77-b341-61f5e3c5e023",
-              "finished_at": "2023-03-21T14:06:59Z",
-              "id": "67c9a8b1-8de4-49fd-b1ca-b63e464afe0a",
-              "name": "zip_archive_generator_en",
-              "started_at": "2023-03-21T14:06:40Z",
-              "status": "succeeded"
-            },
-            {
-              "credit_cost": 2,
-              "external_id": "6a25740d-cbe7-4d6a-9066-e58c89ce7ebd",
-              "finished_at": "2023-03-21T14:07:02Z",
-              "id": "4686a8ff-afd1-440b-a730-200686b84714",
-              "name": "tar_archive_generator",
-              "started_at": "2023-03-21T14:06:41Z",
-              "status": "succeeded"
-            }
-          ]
-        },
-        {
-          "created_at": "2023-03-21T14:06:15.37761Z",
-          "finished_at": "2023-03-21T14:08:36Z",
-          "id": "7221f8db-d0d7-4edf-ab2c-50f7ddc2a7c4",
-          "name": "stage-3",
-          "put_on_hold_at": null,
-          "started_at": "2023-03-21T14:08:17Z",
-          "status": "succeeded",
-          "triggered_at": "2023-03-21T14:07:45.030895Z",
-          "workflows": [
-            {
-              "credit_cost": null,
-              "external_id": "6951fc62-9477-4be3-abc0-754d7b8c318b",
-              "finished_at": "2023-03-21T14:08:36Z",
-              "id": "3f9dbc4a-4357-4f6f-8db5-fb473419eaaf",
-              "name": "zip_archive_generator_jp",
-              "started_at": "2023-03-21T14:08:17Z",
-              "status": "succeeded"
-            }
-          ]
-        }
-      ]
+        [
+          {
+              "created_at": "2023-03-21T14:47:33.298887Z",
+              "finished_at": "2023-03-21T14:47:54Z",
+              "id": "045e5bf7-e5ee-474a-9115-19c3f98374c5",
+              "name": "stage-1",
+              "put_on_hold_at": null,
+              "started_at": "2023-03-21T14:47:34Z",
+              "status": "succeeded",
+              "triggered_at": "2023-03-21T14:47:33.729235Z",
+              "workflows": [
+                  {
+                      "credit_cost": 2,
+                      "external_id": "5d904190-b261-426a-b656-68c701ec0d23",
+                      "finished_at": "2023-03-21T14:47:46Z",
+                      "id": "fd6391bd-d5d2-4330-800d-3ed39e1b5150",
+                      "name": "placeholder",
+                      "started_at": "2023-03-21T14:47:36Z",
+                      "status": "succeeded"
+                  },
+                  {
+                      "credit_cost": 2,
+                      "external_id": "9c20fda1-c0cc-400b-9fc2-2672fe226f2a",
+                      "finished_at": "2023-03-21T14:47:54Z",
+                      "id": "51f318e7-eed2-4ad9-b73c-e3aef2d0a2c4",
+                      "name": "textfile_generator",
+                      "started_at": "2023-03-21T14:47:34Z",
+                      "status": "succeeded"
+                  }
+              ]
+          },
+          {
+              "created_at": "2023-03-21T14:47:33.298887Z",
+              "finished_at": "2023-03-21T14:48:23Z",
+              "id": "bc0f29d7-e4b6-4769-b9de-bd1a8822dbe4",
+              "name": "stage-2",
+              "put_on_hold_at": null,
+              "started_at": "2023-03-21T14:47:57Z",
+              "status": "succeeded",
+              "triggered_at": "2023-03-21T14:47:55.678992Z",
+              "workflows": [
+                  {
+                      "credit_cost": 2,
+                      "external_id": "3633035f-54bc-4553-afc9-684d98515542",
+                      "finished_at": "2023-03-21T14:48:23Z",
+                      "id": "4b395bf0-1f01-4378-ab95-8a26b9f75d89",
+                      "name": "deployer",
+                      "started_at": "2023-03-21T14:47:58Z",
+                      "status": "succeeded"
+                  },
+                  {
+                      "credit_cost": 2,
+                      "external_id": "41f68e93-4ae7-433c-9b4c-640af2907906",
+                      "finished_at": "2023-03-21T14:48:22Z",
+                      "id": "e6dc8872-f815-46a1-a65f-1329ef9d9dfb",
+                      "name": "zip_archive_generator_en",
+                      "started_at": "2023-03-21T14:47:57Z",
+                      "status": "succeeded"
+                  },
+                  {
+                      "credit_cost": 2,
+                      "external_id": "732b7f2c-4180-4474-916b-1f1b4ca44d32",
+                      "finished_at": "2023-03-21T14:48:15Z",
+                      "id": "fc233177-c7b6-46da-93ad-39718827f048",
+                      "name": "tar_archive_generator",
+                      "started_at": "2023-03-21T14:47:57Z",
+                      "status": "succeeded"
+                  }
+              ]
+          },
+          {
+              "created_at": "2023-03-21T14:47:33.298887Z",
+              "finished_at": "2023-03-21T14:48:55Z",
+              "id": "a3b58152-fc21-46a7-b615-556b29eaee3d",
+              "name": "stage-3",
+              "put_on_hold_at": null,
+              "started_at": "2023-03-21T14:48:28Z",
+              "status": "succeeded",
+              "triggered_at": "2023-03-21T14:48:24.9728Z",
+              "workflows": [
+                  {
+                      "credit_cost": null,
+                      "external_id": "69a37d40-f24e-4e93-ab2f-a94ffd4439ba",
+                      "finished_at": "2023-03-21T14:48:55Z",
+                      "id": "ed998752-9cb8-49e2-bb1c-589b933c4b9b",
+                      "name": "zip_archive_generator_jp",
+                      "started_at": "2023-03-21T14:48:28Z",
+                      "status": "succeeded"
+                  }
+              ]
+          }
+        ]
   - BITRISE_APP_SLUG: b520099804d7e71a
   - BITRISE_AUTH_SERVICE_ARTIFACT_PULL_CLIENT_SECRET: $BITRISE_AUTH_SERVICE_ARTIFACT_PULL_CLIENT_SECRET
 
@@ -245,7 +245,7 @@ workflows:
                 --data "client_secret=$BITRISE_AUTH_SERVICE_ARTIFACT_PULL_CLIENT_SECRET" \
                 --data "grant_type=urn:ietf:params:oauth:grant-type:uma-ticket" \
                 --data "scope=build_artifact:read build:read app:read" \
-                --data "claim_token=ewogICJidWlsZF9pZHMiOiBbCiAgICAiZjQ4Zjk3NzYtNjVmMy00NjJjLTg2MGMtMjMzMWUwMTJkM2ZlIiwKICAgICI4NmVkZDYyMi05ZWJhLTQ5NDYtOTRlYS02M2U2ZDMxZGVmNWEiLAogICAgIjFkZTAxN2RjLTFmODItNDBhYi1iYWJjLWUwZjA0NmY5N2YyZCIsCiAgICAiZDg1ZGZjYWYtMDZlNi00YTc3LWIzNDEtNjFmNWUzYzVlMDIzIiwKICAgICI2YTI1NzQwZC1jYmU3LTRkNmEtOTA2Ni1lNThjODljZTdlYmQiLAogICAgIjY5NTFmYzYyLTk0NzctNGJlMy1hYmMwLTc1NGQ3YjhjMzE4YiIKICBdLAogICJwaXBlbGluZV9pZCI6IFsKICAgICJjY2Q1YTIxMC0zYWI1LTQ2YTYtYTM1Yy02ZWFjMzUxZjBlNDAiCiAgXQp9" \
+                --data "claim_token=ewogICJidWlsZF9pZHMiOiBbCiAgICAiNWQ5MDQxOTAtYjI2MS00MjZhLWI2NTYtNjhjNzAxZWMwZDIzIiwKICAgICI5YzIwZmRhMS1jMGNjLTQwMGItOWZjMi0yNjcyZmUyMjZmMmEiLAogICAgIjM2MzMwMzVmLTU0YmMtNDU1My1hZmM5LTY4NGQ5ODUxNTU0MiIsCiAgICAiNDFmNjhlOTMtNGFlNy00MzNjLTliNGMtNjQwYWYyOTA3OTA2IiwKICAgICI3MzJiN2YyYy00MTgwLTQ0NzQtOTE2Yi0xZjFiNGNhNDRkMzIiLAogICAgIjY5YTM3ZDQwLWYyNGUtNGU5My1hYjJmLWE5NGZmZDQ0MzliYSIKICBdLAogICJwaXBlbGluZV9pZCI6IFsKICAgICI0OWJhNmU5YS1iODNlLTQzYTMtYjc3MS1lNDdhMjhmNDM4ODYiCiAgXQp9" \
                 --data "claim_token_format=urn:ietf:params:oauth:token-type:jwt" \
                 --data "audience=bitrise-api")
 
