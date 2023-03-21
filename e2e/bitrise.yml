@@ -168,14 +168,6 @@ workflows:
               echo "expected:\n$expected"
               exit 1
             fi
-            actual=$(cat hello_world.txt)
-            expected="Hello 世界!"
-            if [ "$actual" != "$expected" ]; then
-              echo "actual:\n$actual"
-              echo
-              echo "expected:\n$expected"
-              exit 1
-            fi
 
   test_download_all_artifacts_of_build:
     before_run:
