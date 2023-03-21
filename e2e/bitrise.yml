@@ -106,9 +106,9 @@ workflows:
     - path::./:
         title: Execute the step again to test file override
         inputs:
-          - verbose: true
-          - artifact_sources: stage-2\.zip_archive_generator
-          - bitrise_api_base_url: https://api.bitrise.io
+        - verbose: true
+        - artifact_sources: stage-2\.zip_archive_generator
+        - bitrise_api_base_url: https://api.bitrise.io
     - git::https://github.com/bitrise-steplib/bitrise-step-check-step-outputs.git@main:
         title: Validate downloaded artifacts
         is_always_run: true
