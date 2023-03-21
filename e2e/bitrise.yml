@@ -5,55 +5,98 @@ app:
   envs:
   # Shared envs for every test workflow
   - BITRISEIO_FINISHED_STAGES: |-
-      [{
-          "id": "ea0c53ce-25e4-41f8-a3ab-8466cdb3f75b",
+      [
+        {
+          "created_at": "2023-03-21T14:06:15.37761Z",
+          "finished_at": "2023-03-21T14:06:38Z",
+          "id": "7735fa76-35c3-47a4-80d5-bfe9e4ad7187",
           "name": "stage-1",
-          "workflows": [{
+          "put_on_hold_at": null,
+          "started_at": "2023-03-21T14:06:16Z",
+          "status": "succeeded",
+          "triggered_at": "2023-03-21T14:06:15.827283Z",
+          "workflows": [
+            {
               "credit_cost": 2,
-              "external_id": "c07c4fb1-631d-471a-bfa7-44b32e62b6ec",
-              "finished_at": "2023-02-16T08:35:34Z",
-              "id": "3ae1a7ab-e263-4619-9f10-9446665933bd",
+              "external_id": "f48f9776-65f3-462c-860c-2331e012d3fe",
+              "finished_at": "2023-03-21T14:06:34Z",
+              "id": "ba3e65fb-b70f-410b-94bc-029b847c2c71",
               "name": "placeholder",
-              "started_at": "2023-02-16T08:35:21Z",
+              "started_at": "2023-03-21T14:06:17Z",
               "status": "succeeded"
-          }, {
+            },
+            {
               "credit_cost": 2,
-              "external_id": "0fb57a0d-5b8b-4da5-86fa-4d3fd9a168b3",
-              "finished_at": "2023-02-16T08:35:48Z",
-              "id": "4e9e5e87-5acd-4137-a489-de0b727ba4c7",
+              "external_id": "86edd622-9eba-4946-94ea-63e6d31def5a",
+              "finished_at": "2023-03-21T14:06:38Z",
+              "id": "ef4ba9c9-a21e-4a51-a2d3-97f166f677eb",
               "name": "textfile_generator",
-              "started_at": "2023-02-16T08:35:20Z",
+              "started_at": "2023-03-21T14:06:16Z",
               "status": "succeeded"
-          }]
-      }, {
-          "id": "37a14bc4-1416-4402-b853-2b25bfa351a7",
+            }
+          ]
+        },
+        {
+          "created_at": "2023-03-21T14:06:15.37761Z",
+          "finished_at": "2023-03-21T14:07:43Z",
+          "id": "0644d087-f5cd-440e-841e-c7d9e2b04c6f",
           "name": "stage-2",
-          "workflows": [{
-              "credit_cost": null,
-              "external_id": "2d16d16c-931e-4ef8-83b1-7679fe045836",
-              "finished_at": "2023-02-16T08:36:23Z",
-              "id": "27f1cbf6-f005-4909-80c2-32da286b5bd8",
+          "put_on_hold_at": null,
+          "started_at": "2023-03-21T14:06:40Z",
+          "status": "succeeded",
+          "triggered_at": "2023-03-21T14:06:39.067834Z",
+          "workflows": [
+            {
+              "credit_cost": 2,
+              "external_id": "1de017dc-1f82-40ab-babc-e0f046f97f2d",
+              "finished_at": "2023-03-21T14:07:43Z",
+              "id": "3aefc75d-9395-4077-b2ef-ee841c3f74c8",
               "name": "deployer",
-              "started_at": "2023-02-16T08:35:52Z",
+              "started_at": "2023-03-21T14:07:19Z",
               "status": "succeeded"
-          }, {
+            },
+            {
               "credit_cost": 2,
-              "external_id": "5fede64d-9c4e-4f2f-87c5-168131292876",
-              "finished_at": "2023-02-16T08:36:16Z",
-              "id": "3cf4eb11-64e6-4e86-9aff-dc58105f2b25",
-              "name": "zip_archive_generator",
-              "started_at": "2023-02-16T08:35:53Z",
+              "external_id": "d85dfcaf-06e6-4a77-b341-61f5e3c5e023",
+              "finished_at": "2023-03-21T14:06:59Z",
+              "id": "67c9a8b1-8de4-49fd-b1ca-b63e464afe0a",
+              "name": "zip_archive_generator_en",
+              "started_at": "2023-03-21T14:06:40Z",
               "status": "succeeded"
-          }, {
+            },
+            {
               "credit_cost": 2,
-              "external_id": "76827c10-5d95-4c08-ae18-8a63c988b37c",
-              "finished_at": "2023-02-16T08:36:19Z",
-              "id": "46318238-4326-4b85-9bd9-059c9a7e6d81",
+              "external_id": "6a25740d-cbe7-4d6a-9066-e58c89ce7ebd",
+              "finished_at": "2023-03-21T14:07:02Z",
+              "id": "4686a8ff-afd1-440b-a730-200686b84714",
               "name": "tar_archive_generator",
-              "started_at": "2023-02-16T08:35:53Z",
+              "started_at": "2023-03-21T14:06:41Z",
               "status": "succeeded"
-          }]
-      }]
+            }
+          ]
+        },
+        {
+          "created_at": "2023-03-21T14:06:15.37761Z",
+          "finished_at": "2023-03-21T14:08:36Z",
+          "id": "7221f8db-d0d7-4edf-ab2c-50f7ddc2a7c4",
+          "name": "stage-3",
+          "put_on_hold_at": null,
+          "started_at": "2023-03-21T14:08:17Z",
+          "status": "succeeded",
+          "triggered_at": "2023-03-21T14:07:45.030895Z",
+          "workflows": [
+            {
+              "credit_cost": null,
+              "external_id": "6951fc62-9477-4be3-abc0-754d7b8c318b",
+              "finished_at": "2023-03-21T14:08:36Z",
+              "id": "3f9dbc4a-4357-4f6f-8db5-fb473419eaaf",
+              "name": "zip_archive_generator_jp",
+              "started_at": "2023-03-21T14:08:17Z",
+              "status": "succeeded"
+            }
+          ]
+        }
+      ]
   - BITRISE_APP_SLUG: b520099804d7e71a
   - BITRISE_AUTH_SERVICE_ARTIFACT_PULL_CLIENT_SECRET: $BITRISE_AUTH_SERVICE_ARTIFACT_PULL_CLIENT_SECRET
 
@@ -101,13 +144,7 @@ workflows:
         title: Execute step
         inputs:
         - verbose: true
-        - artifact_sources: stage-2\.zip_archive_generator
-        - bitrise_api_base_url: https://api.bitrise.io
-    - path::./:
-        title: Execute the step again to test file override
-        inputs:
-        - verbose: true
-        - artifact_sources: stage-2\.zip_archive_generator
+        - artifact_sources: stage-2\.zip_archive_generator_en,stage-3\.zip_archive_generator_jp
         - bitrise_api_base_url: https://api.bitrise.io
     - git::https://github.com/bitrise-steplib/bitrise-step-check-step-outputs.git@main:
         title: Validate downloaded artifacts
@@ -125,6 +162,14 @@ workflows:
             cd $ARCHIVE_ZIP
             actual=$(tree -L 1 --noreport .)
             expected=$(cat $ARCHIVE_LAYOUT)
+            if [ "$actual" != "$expected" ]; then
+              echo "actual:\n$actual"
+              echo
+              echo "expected:\n$expected"
+              exit 1
+            fi
+            actual=$(cat hello_world.txt)
+            expected="Hello 世界!"
             if [ "$actual" != "$expected" ]; then
               echo "actual:\n$actual"
               echo
@@ -200,7 +245,7 @@ workflows:
                 --data "client_secret=$BITRISE_AUTH_SERVICE_ARTIFACT_PULL_CLIENT_SECRET" \
                 --data "grant_type=urn:ietf:params:oauth:grant-type:uma-ticket" \
                 --data "scope=build_artifact:read build:read app:read" \
-                --data "claim_token=ewogICJidWlsZF9pZHMiOiBbCiAgICAiYzA3YzRmYjEtNjMxZC00NzFhLWJmYTctNDRiMzJlNjJiNmVjIiwKICAgICIwZmI1N2EwZC01YjhiLTRkYTUtODZmYS00ZDNmZDlhMTY4YjMiLAogICAgIjJkMTZkMTZjLTkzMWUtNGVmOC04M2IxLTc2NzlmZTA0NTgzNiIsCiAgICAiNWZlZGU2NGQtOWM0ZS00ZjJmLTg3YzUtMTY4MTMxMjkyODc2IiwKICAgICI3NjgyN2MxMC01ZDk1LTRjMDgtYWUxOC04YTYzYzk4OGIzN2MiCiAgXSwKICAicGlwZWxpbmVfaWQiOiBbCiAgICAiNGM4MGVjNzQtMDdjZC00ZmIyLWIxZDEtMDgzMDkzYTNlYTBlIgogIF0KfQo=" \
+                --data "claim_token=ewogICJidWlsZF9pZHMiOiBbCiAgICAiZjQ4Zjk3NzYtNjVmMy00NjJjLTg2MGMtMjMzMWUwMTJkM2ZlIiwKICAgICI4NmVkZDYyMi05ZWJhLTQ5NDYtOTRlYS02M2U2ZDMxZGVmNWEiLAogICAgIjFkZTAxN2RjLTFmODItNDBhYi1iYWJjLWUwZjA0NmY5N2YyZCIsCiAgICAiZDg1ZGZjYWYtMDZlNi00YTc3LWIzNDEtNjFmNWUzYzVlMDIzIiwKICAgICI2YTI1NzQwZC1jYmU3LTRkNmEtOTA2Ni1lNThjODljZTdlYmQiLAogICAgIjY5NTFmYzYyLTk0NzctNGJlMy1hYmMwLTc1NGQ3YjhjMzE4YiIKICBdLAogICJwaXBlbGluZV9pZCI6IFsKICAgICJjY2Q1YTIxMC0zYWI1LTQ2YTYtYTM1Yy02ZWFjMzUxZjBlNDAiCiAgXQp9" \
                 --data "claim_token_format=urn:ietf:params:oauth:token-type:jwt" \
                 --data "audience=bitrise-api")
 
