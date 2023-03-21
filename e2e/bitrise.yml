@@ -97,21 +97,18 @@ workflows:
     - _setup
     - _cleanup
     steps:
-    - script:
-        title: Prepare environment for file overwrite testing
-        inputs:
-        - content: |-
-            #!/bin/env bash
-            set -ex
-            mkdir -p $ARCHIVE_ZIP
-            cd $ARCHIVE_ZIP
-            echo "Hello, 世界" > hello_world.txt
     - path::./:
         title: Execute step
         inputs:
         - verbose: true
         - artifact_sources: stage-2\.zip_archive_generator
         - bitrise_api_base_url: https://api.bitrise.io
+    - path::./:
+        title: Execute the step again to test file override
+        inputs:
+          - verbose: true
+          - artifact_sources: stage-2\.zip_archive_generator
+          - bitrise_api_base_url: https://api.bitrise.io
     - git::https://github.com/bitrise-steplib/bitrise-step-check-step-outputs.git@main:
         title: Validate downloaded artifacts
         is_always_run: true
