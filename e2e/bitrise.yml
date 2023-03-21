@@ -97,6 +97,15 @@ workflows:
     - _setup
     - _cleanup
     steps:
+    - script:
+        title: Prepare environment for file overwrite testing
+        inputs:
+          - content: |-
+              #!/bin/env bash
+              set -ex
+              mkdir -p $ARCHIVE_ZIP
+              cd $ARCHIVE_ZIP
+              echo "Hello, 世界" > hello_world.txt
     - path::./:
         title: Execute step
         inputs:
