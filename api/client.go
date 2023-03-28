@@ -102,7 +102,7 @@ func (c *DefaultBitriseAPIClient) get(endpoint, next string) (*http.Response, er
 		return nil, err
 	}
 
-	req.Header.Add("X-HTTP_BUILD_API_TOKEN", c.authToken)
+	req.Header.Add("BUILD_API_TOKEN", c.authToken)
 
 	if next != "" {
 		queryValues := req.URL.Query()
