@@ -103,7 +103,7 @@ func (c *DefaultBitriseAPIClient) get(endpoint, next string) (*http.Response, er
 		return nil, err
 	}
 
-	req.Header.Add("Authorization", fmt.Sprintf("Bearer %s", c.authToken))
+	req.Header.Add("Authorization", c.authToken)
 
 	if next != "" {
 		queryValues := req.URL.Query()
