@@ -6,6 +6,7 @@ import (
 	"io/ioutil"
 	"log"
 	"net/http"
+	"net/http/httputil"
 	"time"
 
 	"github.com/bitrise-io/go-utils/retry"
@@ -110,9 +111,19 @@ func (c *DefaultBitriseAPIClient) get(endpoint, next string) (*http.Response, er
 		req.URL.RawQuery = queryValues.Encode()
 	}
 
+	reqDump, err := httputil.DumpRequest(req, true)
+	if err == nil {
+		log.Printf("reqDump:\n%s\n", reqDump)
+	}
+
 	resp, err := c.httpClient.Do(req)
 	if err != nil {
 		return nil, err
+	}
+
+	respDump, err := httputil.DumpResponse(resp, true)
+	if err == nil {
+		log.Printf("respDump:\n%s\n", respDump)
 	}
 
 	if resp.StatusCode >= 300 || resp.StatusCode < 200 {
