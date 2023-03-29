@@ -87,7 +87,7 @@ inputs:
     is_required: true
     is_dont_change_value: true
 
-- bitrise_api_base_url: https://api.bitrise.io
+- bitrise_api_base_url: https://app.bitrise.io
   opts:
     title: Bitrise API base URL
     summary: The base URL of the Bitrise API used to process the download requests.
