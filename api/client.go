@@ -38,7 +38,7 @@ func NewDefaultBitriseAPIClient(baseURL, authToken string) (DefaultBitriseAPICli
 // ListBuildArtifacts gets the list of artifact details for a given build slug (also performs paging and calls the endpoint multiple times if needed)
 func (c *DefaultBitriseAPIClient) ListBuildArtifacts(appSlug, buildSlug string) ([]ArtifactListElementResponseModel, error) {
 	var artifacts []ArtifactListElementResponseModel
-	requestPath := fmt.Sprintf("/build/%s/artifacts.json", buildSlug)
+	requestPath := fmt.Sprintf("build/%s/artifacts", buildSlug)
 
 	var next string
 	for {
