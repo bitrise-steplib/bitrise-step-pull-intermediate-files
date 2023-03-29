@@ -103,7 +103,7 @@ func (c *DefaultBitriseAPIClient) get(endpoint, next string) (*http.Response, er
 		return nil, err
 	}
 
-	req.Header.Add("X-HTTP_BUILD_API_TOKEN", c.authToken)
+	req.Header.Add("X-HTTP-BUILD-API-TOKEN", c.authToken)
 	req.Header.Add("content-type", "application/json; charset=UTF-8")
 	req.Header.Add("Accept", "application/json")
 
