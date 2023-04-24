@@ -98,6 +98,6 @@ inputs:
   opts:
     title: Access token to call the Bitrise API
     summary: The OAuth access token that authorizes to call the Bitrise API.
-    is_required: true
+    is_required: false
     is_sensitive: true
     is_dont_change_value: true

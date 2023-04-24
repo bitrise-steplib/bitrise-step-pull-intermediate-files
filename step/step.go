@@ -3,6 +3,7 @@ package step
 import (
 	"encoding/json"
 	"fmt"
+	"os"
 	"strings"
 	"time"
 
@@ -25,7 +26,7 @@ type Input struct {
 	AppSlug               string          `env:"app_slug,required"`
 	FinishedStages        string          `env:"finished_stage,required"`
 	BitriseAPIBaseURL     string          `env:"bitrise_api_base_url,required"`
-	BitriseAPIAccessToken stepconf.Secret `env:"bitrise_api_access_token,required"`
+	BitriseAPIAccessToken stepconf.Secret `env:"bitrise_api_access_token"`
 }
 
 type Config struct {
@@ -60,6 +61,12 @@ func (d IntermediateFileDownloader) ProcessConfig() (Config, error) {
 
 	stepconf.Print(input)
 	d.logger.EnableDebugLog(input.Verbose)
+
+	if strings.TrimSpace(string(input.BitriseAPIAccessToken)) == "" {
+		d.logger.Warnf("Bitrise API token is unavailable, skipping step.")
+		d.logger.Printf("Hint: maybe this build is running in the first stage of a pipeline? If so, pulling intermediate files is not possible.")
+		os.Exit(0)
+	}
 
 	finishedStages := input.FinishedStages
 	var finishedStagesModel model.FinishedStages
