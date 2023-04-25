@@ -2,8 +2,8 @@ package step
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
-	"os"
 	"strings"
 	"time"
 
@@ -19,6 +19,8 @@ import (
 )
 
 const downloadDirPrefix = "_artifact_pull"
+
+var ErrMissingAccessToken = errors.New("missing Bitrise API access token")
 
 type Input struct {
 	ArtifactSources       string          `env:"artifact_sources,required"`
@@ -63,9 +65,7 @@ func (d IntermediateFileDownloader) ProcessConfig() (Config, error) {
 	d.logger.EnableDebugLog(input.Verbose)
 
 	if strings.TrimSpace(string(input.BitriseAPIAccessToken)) == "" {
-		d.logger.Warnf("Bitrise API token is unavailable, skipping step.")
-		d.logger.Printf("Hint: maybe this build is running in the first stage of a pipeline? If so, pulling intermediate files is not possible.")
-		os.Exit(0)
+		return Config{}, ErrMissingAccessToken
 	}
 
 	finishedStages := input.FinishedStages
