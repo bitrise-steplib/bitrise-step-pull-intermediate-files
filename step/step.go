@@ -2,6 +2,7 @@ package step
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"strings"
 	"time"
@@ -19,13 +20,15 @@ import (
 
 const downloadDirPrefix = "_artifact_pull"
 
+var ErrMissingAccessToken = errors.New("missing Bitrise API access token")
+
 type Input struct {
 	ArtifactSources       string          `env:"artifact_sources,required"`
 	Verbose               bool            `env:"verbose,opt[true,false]"`
 	AppSlug               string          `env:"app_slug,required"`
 	FinishedStages        string          `env:"finished_stage,required"`
 	BitriseAPIBaseURL     string          `env:"bitrise_api_base_url,required"`
-	BitriseAPIAccessToken stepconf.Secret `env:"bitrise_api_access_token,required"`
+	BitriseAPIAccessToken stepconf.Secret `env:"bitrise_api_access_token"`
 }
 
 type Config struct {
@@ -60,6 +63,10 @@ func (d IntermediateFileDownloader) ProcessConfig() (Config, error) {
 
 	stepconf.Print(input)
 	d.logger.EnableDebugLog(input.Verbose)
+
+	if strings.TrimSpace(string(input.BitriseAPIAccessToken)) == "" {
+		return Config{}, ErrMissingAccessToken
+	}
 
 	finishedStages := input.FinishedStages
 	var finishedStagesModel model.FinishedStages

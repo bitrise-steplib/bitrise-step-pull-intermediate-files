@@ -146,7 +146,7 @@ Do not forget to escape the special characters when using a regex pattern.
 | `app_slug` | The slug that uniquely identifies your app on bitrise.io. It’s part of the app URL, too. | required | `$BITRISE_APP_SLUG` |
 | `finished_stage` | This is a JSON representation of the finished stages for which the step can download build artifacts. | required | `$BITRISEIO_FINISHED_STAGES` |
 | `bitrise_api_base_url` | The base URL of the Bitrise API used to process the download requests. | required | `https://api.bitrise.io` |
-| `bitrise_api_access_token` | The OAuth access token that authorizes to call the Bitrise API. | required, sensitive | `$BITRISEIO_ARTIFACT_PULL_TOKEN` |
+| `bitrise_api_access_token` | The OAuth access token that authorizes to call the Bitrise API. | sensitive | `$BITRISEIO_ARTIFACT_PULL_TOKEN` |
 </details>
 
 <details>

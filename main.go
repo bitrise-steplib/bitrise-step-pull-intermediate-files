@@ -1,6 +1,7 @@
 package main
 
 import (
+	"errors"
 	"os"
 
 	"github.com/bitrise-io/go-steputils/stepconf"
@@ -21,8 +22,14 @@ func run() int {
 	downloader := createIntermediateFileDownloader(logger)
 	config, err := downloader.ProcessConfig()
 	if err != nil {
-		logger.Errorf("Process config: %s", err)
-		return 1
+		if errors.Is(err, step.ErrMissingAccessToken) {
+			logger.Warnf("Bitrise API token is unavailable, skipping step.")
+			logger.Printf("Hint: maybe this build is running in the first stage of a pipeline? If so, pulling intermediate files is not possible.")
+			return 0
+		} else {
+			logger.Errorf("Process config: %s", err)
+			return 1
+		}
 	}
 
 	result, err := downloader.Run(config)
