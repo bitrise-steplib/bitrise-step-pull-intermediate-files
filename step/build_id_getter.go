@@ -3,6 +3,7 @@ package step
 import (
 	"regexp"
 
+	"github.com/bitrise-io/go-utils/log"
 	"github.com/bitrise-steplib/bitrise-step-pull-intermediate-files/model"
 )
 
@@ -11,6 +12,7 @@ const DELIMITER = "."
 type BuildIDGetter struct {
 	FinishedStages model.FinishedStages
 	TargetNames    []string
+	logger        log.Logger
 }
 
 type keyValuePair struct {
@@ -18,10 +20,11 @@ type keyValuePair struct {
 	value string
 }
 
-func NewBuildIDGetter(finishedStages model.FinishedStages, targetNames []string) BuildIDGetter {
+func NewBuildIDGetter(finishedStages model.FinishedStages, targetNames []string, logger log.Logger) BuildIDGetter {
 	return BuildIDGetter{
 		FinishedStages: finishedStages,
 		TargetNames:    targetNames,
+		logger: logger,
 	}
 }
 
@@ -69,6 +72,7 @@ func (bg BuildIDGetter) createKeyValuePairSlice() []keyValuePair {
 	for _, stage := range bg.FinishedStages {
 		for _, wf := range stage.Workflows {
 			if wf.ExternalId == "" {
+				bg.logger.Printf("Empty external ID for workflow %s in stage %s", wf.Name, stage.Name)
 				continue;
 			}
 			stageWorkflowMap = append(stageWorkflowMap, keyValuePair{
