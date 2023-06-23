@@ -72,7 +72,7 @@ func (bg BuildIDGetter) createKeyValuePairSlice() []keyValuePair {
 	for _, stage := range bg.FinishedStages {
 		for _, wf := range stage.Workflows {
 			if wf.ExternalId == "" {
-				bg.logger.Printf("Empty external ID for workflow %s in stage %s", wf.Name, stage.Name)
+				bg.logger.Printf("Skipping workflow %s in stage %s. Workflow was not executed.", wf.Name, stage.Name)
 				continue;
 			}
 			stageWorkflowMap = append(stageWorkflowMap, keyValuePair{
