@@ -25,6 +25,10 @@ func Test_GetBuildIDs_without_wildcards(t *testing.T) {
 					Name:       "workflow1_2",
 					ExternalId: "build1_2b",
 				},
+				{
+					Name:       "workflow1_2",
+					ExternalId: "", // workflows without external IDs should be skipped
+				},
 			},
 		},
 		{
