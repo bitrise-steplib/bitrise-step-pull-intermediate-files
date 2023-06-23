@@ -68,6 +68,9 @@ func (bg BuildIDGetter) createKeyValuePairSlice() []keyValuePair {
 	var stageWorkflowMap []keyValuePair
 	for _, stage := range bg.FinishedStages {
 		for _, wf := range stage.Workflows {
+			if wf.ExternalId == "" {
+				continue;
+			}
 			stageWorkflowMap = append(stageWorkflowMap, keyValuePair{
 				key:   stage.Name + DELIMITER + wf.Name,
 				value: wf.ExternalId,
