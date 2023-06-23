@@ -4,6 +4,7 @@ import (
 	"sort"
 	"testing"
 
+	"github.com/bitrise-io/go-utils/log"
 	"github.com/bitrise-steplib/bitrise-step-pull-intermediate-files/model"
 	"github.com/stretchr/testify/assert"
 )
@@ -118,7 +119,7 @@ func Test_GetBuildIDs_without_wildcards(t *testing.T) {
 	}
 	for _, tC := range testCases {
 		t.Run(tC.desc, func(t *testing.T) {
-			buildIDGetter := NewBuildIDGetter(tC.finishedStages, tC.targetNames)
+			buildIDGetter := NewBuildIDGetter(tC.finishedStages, tC.targetNames, log.NewLogger())
 
 			buildIDs, err := buildIDGetter.GetBuildIDs()
 			if tC.expectedErrorMessage != "" {
