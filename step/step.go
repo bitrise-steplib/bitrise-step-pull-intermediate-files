@@ -84,7 +84,7 @@ func (d IntermediateFileDownloader) ProcessConfig() (Config, error) {
 }
 
 func (d IntermediateFileDownloader) Run(cfg Config) (Result, error) {
-	buildIdGetter := NewBuildIDGetter(cfg.FinishedStages, cfg.ArtifactSources)
+	buildIdGetter := NewBuildIDGetter(cfg.FinishedStages, cfg.ArtifactSources, d.logger)
 	buildIDs, err := buildIdGetter.GetBuildIDs()
 	if err != nil {
 		return Result{}, fmt.Errorf("failed to get build IDs: %w", err)
