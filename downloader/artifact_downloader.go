@@ -14,10 +14,10 @@ import (
 	"github.com/bitrise-steplib/bitrise-step-pull-intermediate-files/api"
 
 	"github.com/bitrise-io/go-utils/command"
-	"github.com/bitrise-io/go-utils/filedownloader"
 	"github.com/bitrise-io/go-utils/log"
 	"github.com/bitrise-io/go-utils/pathutil"
 	"github.com/bitrise-io/go-utils/retry"
+	"github.com/melbahja/got"
 )
 
 const (
@@ -116,8 +116,10 @@ func (ad *ConcurrentArtifactDownloader) downloadFile(targetDir, fileName, downlo
 
 	ctx, cancel := context.WithTimeout(context.Background(), ad.Timeout)
 
-	downloader := filedownloader.NewWithContext(ctx, retry.NewHTTPClient().StandardClient())
-	err := downloader.Get(fileFullPath, downloadURL)
+	downloader := got.New()
+	downloader.Client = retry.NewHTTPClient().StandardClient()
+
+	err := downloader.Do(got.NewDownload(ctx, downloadURL, fileFullPath))
 	cancel()
 	if err != nil {
 		return "", err
