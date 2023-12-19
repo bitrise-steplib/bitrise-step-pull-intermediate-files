@@ -122,7 +122,7 @@ func (ad *ConcurrentArtifactDownloader) downloadFile(targetDir, fileName, downlo
 	err := downloader.Do(got.NewDownload(ctx, downloadURL, fileFullPath))
 	cancel()
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("unable to download file from %s: %w", downloadURL, err)
 	}
 	return fileFullPath, nil
 }
