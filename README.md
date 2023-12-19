@@ -2,6 +2,8 @@
 
 [![Step changelog](https://shields.io/github/v/release/bitrise-steplib/bitrise-step-pull-intermediate-files?include_prereleases&label=changelog&color=blueviolet)](https://github.com/bitrise-steplib/bitrise-step-pull-intermediate-files/releases)
 
+DUMMY CHANGE
+
 The Step downloads Pipeline intermediate files to a local folder.
 
 <details>
