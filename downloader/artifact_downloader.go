@@ -121,7 +121,6 @@ func (ad *ConcurrentArtifactDownloader) downloadFile(targetDir, fileName, downlo
 	downloader.Client = retry.NewHTTPClient().StandardClient()
 
 	err := downloader.Do(got.NewDownload(ctx, downloadURL, fileFullPath))
-	cancel()
 
 	if err != nil {
 		if err.Error() == "Response status code is not ok: 416" { // fallback to single threaded download - this error seems to happen for 0 size files with got
@@ -130,9 +129,13 @@ func (ad *ConcurrentArtifactDownloader) downloadFile(targetDir, fileName, downlo
 		}
 
 		if err != nil {
+			cancel()
+
 			return "", fmt.Errorf("unable to download file from %s: %w", downloadURL, err)
 		}
 	}
+
+	cancel()
 
 	return fileFullPath, nil
 }
