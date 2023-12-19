@@ -3,7 +3,7 @@ package api
 import (
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"log"
 	"net/http"
 	"time"
@@ -47,7 +47,7 @@ func (c *DefaultBitriseAPIClient) ListBuildArtifacts(appSlug, buildSlug string) 
 		}
 
 		var respBody []byte
-		respBody, err = ioutil.ReadAll(resp.Body)
+		respBody, err = io.ReadAll(resp.Body)
 		responseBodyCloser(resp)
 		if err != nil {
 			return nil, err
@@ -81,7 +81,7 @@ func (c *DefaultBitriseAPIClient) ShowBuildArtifact(appSlug, buildSlug, artifact
 	defer responseBodyCloser(resp)
 
 	var respBody []byte
-	respBody, err = ioutil.ReadAll(resp.Body)
+	respBody, err = io.ReadAll(resp.Body)
 	if err != nil {
 		return ArtifactResponseItemModel{}, err
 	}
