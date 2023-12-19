@@ -18,6 +18,7 @@ import (
 	"github.com/bitrise-io/go-utils/log"
 	"github.com/bitrise-io/go-utils/pathutil"
 	"github.com/bitrise-io/go-utils/retry"
+	"github.com/melbahja/got"
 )
 
 const (
@@ -116,12 +117,26 @@ func (ad *ConcurrentArtifactDownloader) downloadFile(targetDir, fileName, downlo
 
 	ctx, cancel := context.WithTimeout(context.Background(), ad.Timeout)
 
-	downloader := filedownloader.NewWithContext(ctx, retry.NewHTTPClient().StandardClient())
-	err := downloader.Get(fileFullPath, downloadURL)
-	cancel()
+	downloader := got.New()
+	downloader.Client = retry.NewHTTPClient().StandardClient()
+
+	err := downloader.Do(got.NewDownload(ctx, downloadURL, fileFullPath))
+
 	if err != nil {
-		return "", err
+		if err.Error() == "Response status code is not ok: 416" { // fallback to single threaded download - this error seems to happen for 0 size files with got
+			downloader := filedownloader.NewWithContext(ctx, retry.NewHTTPClient().StandardClient())
+			err = downloader.Get(fileFullPath, downloadURL)
+		}
+
+		if err != nil {
+			cancel()
+
+			return "", fmt.Errorf("unable to download file from %s: %w", downloadURL, err)
+		}
 	}
+
+	cancel()
+
 	return fileFullPath, nil
 }
 

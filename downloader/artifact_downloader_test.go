@@ -67,16 +67,18 @@ func Test_DownloadAndSaveArtifacts_DownloadFails(t *testing.T) {
 	targetDir, err := getDownloadDir(relativeDownloadPath)
 	assert.NoError(t, err)
 
+	downloadURL := svr.URL + "/1.txt"
+
 	var artifacts []api.ArtifactResponseItemModel
 	artifacts = append(artifacts,
-		api.ArtifactResponseItemModel{DownloadURL: svr.URL + "/1.txt", Title: "1.txt"})
+		api.ArtifactResponseItemModel{DownloadURL: downloadURL, Title: "1.txt"})
 
 	// TODO: mock command factory
 	artifactDownloader := NewConcurrentArtifactDownloader(5*time.Minute, log.NewLogger(), nil)
 
 	result, err := artifactDownloader.DownloadAndSaveArtifacts(artifacts, targetDir)
 
-	assert.EqualError(t, result[0].DownloadError, fmt.Sprintf("unable to download file from: %s/1.txt. Status code: 401", svr.URL))
+	assert.EqualError(t, result[0].DownloadError, fmt.Sprintf("unable to download file from %s: Response status code is not ok: 401", downloadURL))
 	assert.NoError(t, err)
 
 	_ = os.RemoveAll(targetDir)
