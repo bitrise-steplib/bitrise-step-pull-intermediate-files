@@ -14,6 +14,7 @@ import (
 	"github.com/bitrise-steplib/bitrise-step-pull-intermediate-files/api"
 
 	"github.com/bitrise-io/go-utils/command"
+	"github.com/bitrise-io/go-utils/filedownloader"
 	"github.com/bitrise-io/go-utils/log"
 	"github.com/bitrise-io/go-utils/pathutil"
 	"github.com/bitrise-io/go-utils/retry"
@@ -121,9 +122,18 @@ func (ad *ConcurrentArtifactDownloader) downloadFile(targetDir, fileName, downlo
 
 	err := downloader.Do(got.NewDownload(ctx, downloadURL, fileFullPath))
 	cancel()
+
 	if err != nil {
-		return "", fmt.Errorf("unable to download file from %s: %w", downloadURL, err)
+		if err.Error() == "Response status code is not ok: 416" { // fallback to single threaded download - this error seems to happen for 0 size files with got
+			downloader := filedownloader.NewWithContext(ctx, retry.NewHTTPClient().StandardClient())
+			err = downloader.Get(fileFullPath, downloadURL)
+		}
+
+		if err != nil {
+			return "", fmt.Errorf("unable to download file from %s: %w", downloadURL, err)
+		}
 	}
+
 	return fileFullPath, nil
 }
 
