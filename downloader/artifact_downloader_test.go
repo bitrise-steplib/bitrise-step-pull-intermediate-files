@@ -84,6 +84,45 @@ func Test_DownloadAndSaveArtifacts_DownloadFails(t *testing.T) {
 	_ = os.RemoveAll(targetDir)
 }
 
+func Test_DownloadAndSaveArtifacts_RetriesFailingDownload(t *testing.T) {
+	receivedRequestCount := 0
+	svr := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		receivedRequestCount++
+
+		if receivedRequestCount == 1 {
+			// The first request needs to be valid because this is for getting the downloadable content range.
+			// The library will not attempt to perform any retries if this fails.
+			w.Header().Set("content-length", "1")
+			w.Header().Set("content-range", "0/2")
+			_, _ = w.Write([]byte("a"))
+		} else {
+			w.WriteHeader(http.StatusInternalServerError)
+		}
+	}))
+	defer svr.Close()
+
+	targetDir, err := getDownloadDir(relativeDownloadPath)
+	assert.NoError(t, err)
+
+	artifacts := []api.ArtifactResponseItemModel{
+		{DownloadURL: svr.URL + "/1.txt", Title: "1.txt"},
+	}
+
+	artifactDownloader := NewConcurrentArtifactDownloader(5*time.Minute, log.NewLogger(), nil)
+	_, err = artifactDownloader.DownloadAndSaveArtifacts(artifacts, targetDir)
+
+	assert.NoError(t, err)
+	// Total request count is:
+	// 1 + 2 * 5 = 11
+	// -----
+	// 1 -> initial request to get the content range
+	// 2 * -> the library uses a min of 2 concurrent downloads
+	// 5 -> first request + 4 retries
+	assert.Equal(t, 11, receivedRequestCount)
+
+	_ = os.RemoveAll(targetDir)
+}
+
 func Test_DownloadAndSaveZipDirectoryArtifacts(t *testing.T) {
 	svr := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		_, _ = fmt.Fprint(w, "dummy data")
