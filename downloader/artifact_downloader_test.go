@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"os"
+	"sync/atomic"
 	"testing"
 	"time"
 
@@ -85,11 +86,11 @@ func Test_DownloadAndSaveArtifacts_DownloadFails(t *testing.T) {
 }
 
 func Test_DownloadAndSaveArtifacts_RetriesFailingDownload(t *testing.T) {
-	receivedRequestCount := 0
+	var receivedRequestCount atomic.Uint64
 	svr := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		receivedRequestCount++
+		receivedRequestCount.Add(1)
 
-		if receivedRequestCount == 1 {
+		if receivedRequestCount.Load() == 1 {
 			// The first request needs to be valid because this is for getting the downloadable content range.
 			// The library will not attempt to perform any retries if this fails.
 			w.Header().Set("content-length", "1")
@@ -118,7 +119,7 @@ func Test_DownloadAndSaveArtifacts_RetriesFailingDownload(t *testing.T) {
 	// 1 -> initial request to get the content range
 	// 2 * -> the library uses a min of 2 concurrent downloads
 	// 5 -> first request + 4 retries
-	assert.Equal(t, 11, receivedRequestCount)
+	assert.Equal(t, uint64(11), receivedRequestCount.Load())
 
 	_ = os.RemoveAll(targetDir)
 }
