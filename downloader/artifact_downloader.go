@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"net/http"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -12,6 +13,7 @@ import (
 	"time"
 
 	"github.com/bitrise-steplib/bitrise-step-pull-intermediate-files/api"
+	"github.com/hashicorp/go-retryablehttp"
 
 	"github.com/bitrise-io/go-utils/command"
 	"github.com/bitrise-io/go-utils/filedownloader"
@@ -117,10 +119,10 @@ func (ad *ConcurrentArtifactDownloader) downloadFile(targetDir, fileName, downlo
 
 	ctx, cancel := context.WithTimeout(context.Background(), ad.Timeout)
 
-	downloader := got.New()
-	downloader.Client = retry.NewHTTPClient().StandardClient()
+	downloader := got.NewWithContext(ctx)
+	downloader.Client = ad.createClient().StandardClient()
 
-	err := downloader.Do(got.NewDownload(ctx, downloadURL, fileFullPath))
+	err := downloader.Download(downloadURL, fileFullPath)
 
 	if err != nil {
 		if err.Error() == "Response status code is not ok: 416" { // fallback to single threaded download - this error seems to happen for 0 size files with got
@@ -166,7 +168,7 @@ func (ad *ConcurrentArtifactDownloader) downloadAndExtractZipArchive(targetDir, 
 }
 
 func (ad *ConcurrentArtifactDownloader) downloadAndExtractTarArchive(targetDir, fileName, downloadURL string) (string, error) {
-	client := retry.NewHTTPClient()
+	client := ad.createClient()
 
 	resp, err := client.Get(downloadURL)
 	if err != nil {
@@ -218,4 +220,23 @@ func (ad *ConcurrentArtifactDownloader) runExtractionCommand(cmd command.Command
 	}
 
 	return nil
+}
+
+func (ad *ConcurrentArtifactDownloader) createClient() *retryablehttp.Client {
+	client := retry.NewHTTPClient()
+	client.CheckRetry = func(ctx context.Context, resp *http.Response, err error) (bool, error) {
+		// We are using this default retry policy as part of the default client settings
+		shouldRetry, err := retryablehttp.DefaultRetryPolicy(ctx, resp, err)
+
+		if shouldRetry {
+			statusCode := -1
+			if resp != nil {
+				statusCode = resp.StatusCode
+			}
+			ad.Logger.Warnf("Retrying download, http status: %d, error: %s", statusCode, err)
+		}
+
+		return shouldRetry, err
+	}
+	return client
 }
