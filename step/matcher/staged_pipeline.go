@@ -1,4 +1,4 @@
-package step
+package matcher
 
 import (
 	"regexp"
@@ -9,10 +9,10 @@ import (
 
 const DELIMITER = "."
 
-type BuildIDGetter struct {
-	FinishedStages model.FinishedStages
-	TargetNames    []string
-	logger        log.Logger
+type stagedPipelineMatcher struct {
+	finishedStages model.FinishedStages
+	targetNames    []string
+	logger         log.Logger
 }
 
 type keyValuePair struct {
@@ -20,20 +20,20 @@ type keyValuePair struct {
 	value string
 }
 
-func NewBuildIDGetter(finishedStages model.FinishedStages, targetNames []string, logger log.Logger) BuildIDGetter {
-	return BuildIDGetter{
-		FinishedStages: finishedStages,
-		TargetNames:    targetNames,
-		logger: logger,
+func newStagedPipelineMatcher(finishedStages model.FinishedStages, targetNames []string, logger log.Logger) stagedPipelineMatcher {
+	return stagedPipelineMatcher{
+		finishedStages: finishedStages,
+		targetNames:    targetNames,
+		logger:         logger,
 	}
 }
 
-func (bg BuildIDGetter) GetBuildIDs() ([]string, error) {
+func (s stagedPipelineMatcher) Matches() ([]string, error) {
 	buildIDsSet := make(map[string]bool)
 
-	kvpSlice := bg.createKeyValuePairSlice()
+	kvpSlice := s.createKeyValuePairSlice()
 
-	if len(bg.TargetNames) == 0 {
+	if len(s.targetNames) == 0 {
 		for _, kvPair := range kvpSlice {
 			buildIDsSet[kvPair.value] = true
 		}
@@ -41,7 +41,7 @@ func (bg BuildIDGetter) GetBuildIDs() ([]string, error) {
 		return convertKeySetToArray(buildIDsSet), nil
 	}
 
-	for _, target := range bg.TargetNames {
+	for _, target := range s.targetNames {
 		for _, kvPair := range kvpSlice {
 			matched, err := regexp.MatchString(target, kvPair.key)
 			if err != nil {
@@ -57,23 +57,13 @@ func (bg BuildIDGetter) GetBuildIDs() ([]string, error) {
 	return convertKeySetToArray(buildIDsSet), nil
 }
 
-func convertKeySetToArray(set map[string]bool) []string {
-	var ids []string
-
-	for k := range set {
-		ids = append(ids, k)
-	}
-
-	return ids
-}
-
-func (bg BuildIDGetter) createKeyValuePairSlice() []keyValuePair {
+func (s stagedPipelineMatcher) createKeyValuePairSlice() []keyValuePair {
 	var stageWorkflowMap []keyValuePair
-	for _, stage := range bg.FinishedStages {
+	for _, stage := range s.finishedStages {
 		for _, wf := range stage.Workflows {
 			if wf.ExternalId == "" {
-				bg.logger.Printf("Skipping workflow %s in stage %s. Workflow was not executed.", wf.Name, stage.Name)
-				continue;
+				s.logger.Printf("Skipping workflow %s in stage %s. Workflow was not executed.", wf.Name, stage.Name)
+				continue
 			}
 			stageWorkflowMap = append(stageWorkflowMap, keyValuePair{
 				key:   stage.Name + DELIMITER + wf.Name,

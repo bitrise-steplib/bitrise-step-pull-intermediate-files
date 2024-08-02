@@ -1,4 +1,4 @@
-package step
+package matcher
 
 import (
 	"sort"
@@ -9,7 +9,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func Test_GetBuildIDs_without_wildcards(t *testing.T) {
+func TestStagedMatcher(t *testing.T) {
 	finishedStages := model.FinishedStages{
 		{
 			Name: "stage1",
@@ -119,9 +119,9 @@ func Test_GetBuildIDs_without_wildcards(t *testing.T) {
 	}
 	for _, tC := range testCases {
 		t.Run(tC.desc, func(t *testing.T) {
-			buildIDGetter := NewBuildIDGetter(tC.finishedStages, tC.targetNames, log.NewLogger())
+			matcher := newStagedPipelineMatcher(tC.finishedStages, tC.targetNames, log.NewLogger())
 
-			buildIDs, err := buildIDGetter.GetBuildIDs()
+			buildIDs, err := matcher.Matches()
 			if tC.expectedErrorMessage != "" {
 				assert.EqualError(t, err, tC.expectedErrorMessage)
 			} else {
