@@ -17,6 +17,7 @@ func Test_GivenInputs_WhenCreatingConfig_ThenMappingIsCorrect(t *testing.T) {
 	envRepository.On("Get", "verbose").Return("true")
 	envRepository.On("Get", "app_slug").Return("app-slug")
 	envRepository.On("Get", "finished_stage").Return("[]")
+	envRepository.On("Get", "finished_workflows").Return("[]")
 	envRepository.On("Get", "bitrise_api_base_url").Return("url")
 	envRepository.On("Get", "bitrise_api_access_token").Return("token")
 
@@ -44,6 +45,7 @@ func Test_GivenNoToken_WhenCreatingConfig_ThenErrorIsCorrect(t *testing.T) {
 	envRepository.On("Get", "verbose").Return("true")
 	envRepository.On("Get", "app_slug").Return("app-slug")
 	envRepository.On("Get", "finished_stage").Return("[]")
+	envRepository.On("Get", "finished_workflows").Return("[]")
 	envRepository.On("Get", "bitrise_api_base_url").Return("url")
 	envRepository.On("Get", "bitrise_api_access_token").Return("")
 
