@@ -50,6 +50,7 @@ func (g graphPipelineMatcher) Matches() ([]string, error) {
 
 			if matched {
 				identifiers[workflow.ExternalId] = true
+				break
 			}
 		}
 	}
