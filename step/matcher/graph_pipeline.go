@@ -25,7 +25,7 @@ func (g graphPipelineMatcher) Matches() ([]string, error) {
 	var executedWorkflows []model.Workflow
 	for _, workflow := range g.finishedWorkflows {
 		if workflow.ExternalId == "" {
-			g.logger.Printf("Skipping workflow %s becaues it was not executed.", workflow.Name)
+			g.logger.Printf("Skipping workflow %s because it was not executed.", workflow.Name)
 			continue
 		}
 		executedWorkflows = append(executedWorkflows, workflow)
