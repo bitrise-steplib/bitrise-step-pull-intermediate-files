@@ -38,7 +38,7 @@ func (s stagedPipelineMatcher) Matches() ([]string, error) {
 			buildIDsSet[kvPair.value] = true
 		}
 
-		return convertKeySetToArray(buildIDsSet), nil
+		return convertKeySetToSlice(buildIDsSet), nil
 	}
 
 	for _, target := range s.targetNames {
@@ -54,7 +54,7 @@ func (s stagedPipelineMatcher) Matches() ([]string, error) {
 		}
 	}
 
-	return convertKeySetToArray(buildIDsSet), nil
+	return convertKeySetToSlice(buildIDsSet), nil
 }
 
 func (s stagedPipelineMatcher) createKeyValuePairSlice() []keyValuePair {

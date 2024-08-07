@@ -38,7 +38,7 @@ func (g graphPipelineMatcher) Matches() ([]string, error) {
 			identifiers[workflow.ExternalId] = true
 		}
 
-		return convertKeySetToArray(identifiers), nil
+		return convertKeySetToSlice(identifiers), nil
 	}
 
 	for _, workflow := range executedWorkflows {
@@ -54,5 +54,5 @@ func (g graphPipelineMatcher) Matches() ([]string, error) {
 		}
 	}
 
-	return convertKeySetToArray(identifiers), nil
+	return convertKeySetToSlice(identifiers), nil
 }

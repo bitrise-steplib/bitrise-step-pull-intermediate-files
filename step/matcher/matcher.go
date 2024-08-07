@@ -17,7 +17,7 @@ func NewBuildIDMatcher(finishedStages model.FinishedStages, finishedWorkflows mo
 	return newGraphPipelineMatcher(finishedWorkflows, targetNames, logger)
 }
 
-func convertKeySetToArray(set map[string]bool) []string {
+func convertKeySetToSlice(set map[string]bool) []string {
 	var ids []string
 
 	for k := range set {
