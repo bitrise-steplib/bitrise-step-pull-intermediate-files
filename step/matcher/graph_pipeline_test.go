@@ -78,6 +78,12 @@ func TestGraphMatcher(t *testing.T) {
 			expectedBuildIDs:     nil,
 			expectedErrorMessage: "",
 		},
+		{
+			desc:                 "invalid regex",
+			targetNames:          []string{"["},
+			expectedBuildIDs:     nil,
+			expectedErrorMessage: "error parsing regexp: missing closing ]: `[`",
+		},
 	}
 	for _, tt := range testCases {
 		t.Run(tt.desc, func(t *testing.T) {
