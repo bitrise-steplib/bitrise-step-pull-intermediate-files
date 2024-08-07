@@ -1,6 +1,7 @@
 package step
 
 import (
+	"strings"
 	"testing"
 
 	"github.com/bitrise-io/go-steputils/stepconf"
@@ -11,31 +12,78 @@ import (
 )
 
 func Test_GivenInputs_WhenCreatingConfig_ThenMappingIsCorrect(t *testing.T) {
-	// Given
-	envRepository := new(mockenv.Repository)
-	envRepository.On("Get", "artifact_sources").Return("stage1.workflow1,stage2.*")
-	envRepository.On("Get", "verbose").Return("true")
-	envRepository.On("Get", "app_slug").Return("app-slug")
-	envRepository.On("Get", "finished_stage").Return("[]")
-	envRepository.On("Get", "finished_workflows").Return("[]")
-	envRepository.On("Get", "bitrise_api_base_url").Return("url")
-	envRepository.On("Get", "bitrise_api_access_token").Return("token")
-
-	inputParser := stepconf.NewInputParser(envRepository)
-	cmdFactory := command.NewFactory(envRepository)
-	step := IntermediateFileDownloader{
-		inputParser:   inputParser,
-		envRepository: envRepository,
-		cmdFactory:    cmdFactory,
-		logger:        log.NewLogger(),
+	testCases := []struct {
+		name              string
+		artifactSources   []string
+		finishedStages    string
+		finishedWorkflows string
+		expectError       bool
+	}{
+		{
+			name: "only staged pipeline",
+			artifactSources: []string{
+				"stage1.workflow1",
+				"stage2.*",
+			},
+			finishedStages:    "[]",
+			finishedWorkflows: "",
+		},
+		{
+			name: "only graph pipeline",
+			artifactSources: []string{
+				"workflow1",
+				"workflows1_.*",
+			},
+			finishedStages:    "",
+			finishedWorkflows: "[]",
+		},
+		{
+			name:              "both pipeline types set",
+			finishedStages:    "[]",
+			finishedWorkflows: "[]",
+			expectError:       true,
+		},
+		{
+			name:              "none of the pipeline types set",
+			finishedStages:    "[]",
+			finishedWorkflows: "[]",
+			expectError:       true,
+		},
 	}
 
-	// When
-	config, err := step.ProcessConfig()
+	for _, testCase := range testCases {
+		t.Run(testCase.name, func(t *testing.T) {
+			// Given
+			envRepository := new(mockenv.Repository)
+			envRepository.On("Get", "artifact_sources").Return(strings.Join(testCase.artifactSources, ","))
+			envRepository.On("Get", "verbose").Return("true")
+			envRepository.On("Get", "app_slug").Return("app-slug")
+			envRepository.On("Get", "finished_stage").Return(testCase.finishedStages)
+			envRepository.On("Get", "finished_workflows").Return(testCase.finishedWorkflows)
+			envRepository.On("Get", "bitrise_api_base_url").Return("url")
+			envRepository.On("Get", "bitrise_api_access_token").Return("token")
 
-	// Then
-	assert.NoError(t, err)
-	assert.Equal(t, []string{"stage1.workflow1", "stage2.*"}, config.ArtifactSources)
+			inputParser := stepconf.NewInputParser(envRepository)
+			cmdFactory := command.NewFactory(envRepository)
+			step := IntermediateFileDownloader{
+				inputParser:   inputParser,
+				envRepository: envRepository,
+				cmdFactory:    cmdFactory,
+				logger:        log.NewLogger(),
+			}
+
+			// When
+			config, err := step.ProcessConfig()
+
+			// Then
+			if testCase.expectError {
+				assert.True(t, err != nil)
+			} else {
+				assert.NoError(t, err)
+				assert.Equal(t, testCase.artifactSources, config.ArtifactSources)
+			}
+		})
+	}
 }
 
 func Test_GivenNoToken_WhenCreatingConfig_ThenErrorIsCorrect(t *testing.T) {
