@@ -28,12 +28,12 @@ func newStagedPipelineMatcher(finishedStages model.FinishedStages, targetNames [
 	}
 }
 
-func (s stagedPipelineMatcher) Matches() ([]string, error) {
+func (spm stagedPipelineMatcher) Matches() ([]string, error) {
 	buildIDsSet := make(map[string]bool)
 
-	kvpSlice := s.createKeyValuePairSlice()
+	kvpSlice := spm.createKeyValuePairSlice()
 
-	if len(s.targetNames) == 0 {
+	if len(spm.targetNames) == 0 {
 		for _, kvPair := range kvpSlice {
 			buildIDsSet[kvPair.value] = true
 		}
@@ -41,7 +41,7 @@ func (s stagedPipelineMatcher) Matches() ([]string, error) {
 		return convertKeySetToSlice(buildIDsSet), nil
 	}
 
-	for _, target := range s.targetNames {
+	for _, target := range spm.targetNames {
 		for _, kvPair := range kvpSlice {
 			matched, err := regexp.MatchString(target, kvPair.key)
 			if err != nil {
@@ -57,12 +57,12 @@ func (s stagedPipelineMatcher) Matches() ([]string, error) {
 	return convertKeySetToSlice(buildIDsSet), nil
 }
 
-func (s stagedPipelineMatcher) createKeyValuePairSlice() []keyValuePair {
+func (spm stagedPipelineMatcher) createKeyValuePairSlice() []keyValuePair {
 	var stageWorkflowMap []keyValuePair
-	for _, stage := range s.finishedStages {
+	for _, stage := range spm.finishedStages {
 		for _, wf := range stage.Workflows {
 			if wf.ExternalId == "" {
-				s.logger.Printf("Skipping workflow %s in stage %s. Workflow was not executed.", wf.Name, stage.Name)
+				spm.logger.Printf("Skipping workflow %s in stage %s. Workflow was not executed.", wf.Name, stage.Name)
 				continue
 			}
 			stageWorkflowMap = append(stageWorkflowMap, keyValuePair{
