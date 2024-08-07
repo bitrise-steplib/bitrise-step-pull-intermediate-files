@@ -73,6 +73,8 @@ func (d IntermediateFileDownloader) ProcessConfig() (Config, error) {
 
 	if input.FinishedStages == "" && input.FinishedWorkflows == "" {
 		return Config{}, fmt.Errorf("both finished stages and workflows inputs are missing")
+	} else if input.FinishedStages != "" && input.FinishedWorkflows != "" {
+		return Config{}, fmt.Errorf("both finished stages and workflows inputs are set")
 	}
 
 	var finishedStagesModel model.FinishedStages
