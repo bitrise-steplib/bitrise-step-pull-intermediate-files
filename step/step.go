@@ -16,6 +16,7 @@ import (
 	"github.com/bitrise-steplib/bitrise-step-pull-intermediate-files/downloader"
 	"github.com/bitrise-steplib/bitrise-step-pull-intermediate-files/export"
 	"github.com/bitrise-steplib/bitrise-step-pull-intermediate-files/model"
+	"github.com/bitrise-steplib/bitrise-step-pull-intermediate-files/step/matcher"
 )
 
 const downloadDirPrefix = "_artifact_pull"
@@ -26,7 +27,8 @@ type Input struct {
 	ArtifactSources       string          `env:"artifact_sources,required"`
 	Verbose               bool            `env:"verbose,opt[true,false]"`
 	AppSlug               string          `env:"app_slug,required"`
-	FinishedStages        string          `env:"finished_stage,required"`
+	FinishedStages        string          `env:"finished_stage"`
+	FinishedWorkflows     string          `env:"finished_workflows"`
 	BitriseAPIBaseURL     string          `env:"bitrise_api_base_url,required"`
 	BitriseAPIAccessToken stepconf.Secret `env:"bitrise_api_access_token"`
 }
@@ -35,6 +37,7 @@ type Config struct {
 	ArtifactSources       []string
 	AppSlug               string
 	FinishedStages        model.FinishedStages
+	FinishedWorkflows     model.FinishedWorkflows
 	BitriseAPIBaseURL     string
 	BitriseAPIAccessToken string
 }
@@ -68,24 +71,39 @@ func (d IntermediateFileDownloader) ProcessConfig() (Config, error) {
 		return Config{}, ErrMissingAccessToken
 	}
 
-	finishedStages := input.FinishedStages
+	if input.FinishedStages == "" && input.FinishedWorkflows == "" {
+		return Config{}, fmt.Errorf("both finished stages and workflows inputs are missing")
+	} else if input.FinishedStages != "" && input.FinishedWorkflows != "" {
+		return Config{}, fmt.Errorf("both finished stages and workflows inputs are set")
+	}
+
 	var finishedStagesModel model.FinishedStages
-	if err := json.Unmarshal([]byte(finishedStages), &finishedStagesModel); err != nil {
-		return Config{}, fmt.Errorf("invalid finished stages: %w", err)
+	if input.FinishedStages != "" {
+		if err := json.Unmarshal([]byte(input.FinishedStages), &finishedStagesModel); err != nil {
+			return Config{}, fmt.Errorf("invalid finished stages: %w", err)
+		}
+	}
+
+	var finishedWorkflows model.FinishedWorkflows
+	if input.FinishedWorkflows != "" {
+		if err := json.Unmarshal([]byte(input.FinishedWorkflows), &finishedWorkflows); err != nil {
+			return Config{}, fmt.Errorf("invalid finished workflows: %w", err)
+		}
 	}
 
 	return Config{
 		ArtifactSources:       strings.Split(input.ArtifactSources, ","),
 		AppSlug:               input.AppSlug,
 		FinishedStages:        finishedStagesModel,
+		FinishedWorkflows:     finishedWorkflows,
 		BitriseAPIBaseURL:     input.BitriseAPIBaseURL,
 		BitriseAPIAccessToken: string(input.BitriseAPIAccessToken),
 	}, nil
 }
 
 func (d IntermediateFileDownloader) Run(cfg Config) (Result, error) {
-	buildIdGetter := NewBuildIDGetter(cfg.FinishedStages, cfg.ArtifactSources, d.logger)
-	buildIDs, err := buildIdGetter.GetBuildIDs()
+	buildIdMatcher := matcher.NewBuildIDMatcher(cfg.FinishedStages, cfg.FinishedWorkflows, cfg.ArtifactSources, d.logger)
+	buildIDs, err := buildIdMatcher.Matches()
 	if err != nil {
 		return Result{}, fmt.Errorf("failed to get build IDs: %w", err)
 	}

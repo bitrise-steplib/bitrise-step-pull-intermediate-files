@@ -7,6 +7,8 @@ type Stage struct {
 	Workflows []Workflow `json:"workflows"`
 }
 
+type FinishedWorkflows []Workflow
+
 type Workflow struct {
 	ExternalId string `json:"external_id"`
 	Name       string `json:"name"`
