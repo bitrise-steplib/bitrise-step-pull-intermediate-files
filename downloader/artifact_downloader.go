@@ -107,7 +107,7 @@ func (ad *ConcurrentArtifactDownloader) download(jobs <-chan downloadJob, result
 
 		if err != nil {
 			results <- ArtifactDownloadResult{DownloadError: err, DownloadURL: j.ResponseModel.DownloadURL}
-			return
+			continue
 		}
 
 		results <- ArtifactDownloadResult{DownloadPath: fileFullPath, DownloadURL: j.ResponseModel.DownloadURL, EnvKey: j.ResponseModel.IntermediateFileInfo.EnvKey}
@@ -123,6 +123,17 @@ func (ad *ConcurrentArtifactDownloader) downloadFile(targetDir, fileName, downlo
 	downloader.Client = ad.createClient().StandardClient()
 
 	err := downloader.Download(downloadURL, fileFullPath)
+
+	if err != nil && errors.Is(err, context.DeadlineExceeded) {
+		ad.Logger.Warnf("Download duration exceeded %s, second attempt", ad.Timeout)
+
+		cancel()
+
+		ctx, cancel = context.WithTimeout(context.Background(), ad.Timeout)
+		downloader := got.NewWithContext(ctx)
+		downloader.Client = ad.createClient().StandardClient()
+		err = downloader.Download(downloadURL, fileFullPath)
+	}
 
 	if err != nil {
 		if err.Error() == "Response status code is not ok: 416" { // fallback to single threaded download - this error seems to happen for 0 size files with got
