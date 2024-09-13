@@ -39,7 +39,7 @@ type ArtifactLister struct {
 }
 
 func NewArtifactLister(apiBaseURL, authToken string, logger log.Logger) (ArtifactLister, error) {
-	client, err := NewDefaultBitriseAPIClient(apiBaseURL, authToken)
+	client, err := NewDefaultBitriseAPIClient(logger, apiBaseURL, authToken)
 	if err != nil {
 		return ArtifactLister{}, err
 	}

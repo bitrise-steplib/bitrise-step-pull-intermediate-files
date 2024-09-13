@@ -4,10 +4,10 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"log"
 	"net/http"
 	"time"
 
+	"github.com/bitrise-io/go-utils/v2/log"
 	"github.com/bitrise-io/go-utils/v2/retryhttp"
 )
 
@@ -16,16 +16,18 @@ const (
 )
 
 type DefaultBitriseAPIClient struct {
+	log        log.Logger
 	httpClient *http.Client
 	authToken  string
 	baseURL    string
 }
 
-func NewDefaultBitriseAPIClient(baseURL, authToken string) (DefaultBitriseAPIClient, error) {
-	httpClient := retryhttp.NewHTTPClient().StandardClient()
+func NewDefaultBitriseAPIClient(logger log.Logger, baseURL, authToken string) (DefaultBitriseAPIClient, error) {
+	httpClient := retryhttp.NewClient(logger).StandardClient()
 	httpClient.Timeout = time.Second * bitriseAPIClientTimeout
 
 	c := DefaultBitriseAPIClient{
+		log:        logger,
 		httpClient: httpClient,
 		authToken:  authToken,
 		baseURL:    baseURL,
@@ -48,7 +50,7 @@ func (c *DefaultBitriseAPIClient) ListBuildArtifacts(appSlug, buildSlug string) 
 
 		var respBody []byte
 		respBody, err = io.ReadAll(resp.Body)
-		responseBodyCloser(resp)
+		c.responseBodyCloser(resp)
 		if err != nil {
 			return nil, err
 		}
@@ -78,7 +80,7 @@ func (c *DefaultBitriseAPIClient) ShowBuildArtifact(appSlug, buildSlug, artifact
 	if err != nil {
 		return ArtifactResponseItemModel{}, err
 	}
-	defer responseBodyCloser(resp)
+	defer c.responseBodyCloser(resp)
 
 	var respBody []byte
 	respBody, err = io.ReadAll(resp.Body)
@@ -122,8 +124,8 @@ func (c DefaultBitriseAPIClient) get(endpoint, next string) (*http.Response, err
 	return resp, err
 }
 
-func responseBodyCloser(resp *http.Response) {
+func (c *DefaultBitriseAPIClient) responseBodyCloser(resp *http.Response) {
 	if err := resp.Body.Close(); err != nil {
-		log.Printf(" [!] Failed to close response body: %+v", err)
+		c.log.Printf(" [!] Failed to close response body: %+v", err)
 	}
 }

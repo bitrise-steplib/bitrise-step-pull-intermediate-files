@@ -137,7 +137,7 @@ func (ad *ConcurrentArtifactDownloader) downloadFile(targetDir, fileName, downlo
 
 	if err != nil {
 		if err.Error() == "Response status code is not ok: 416" { // fallback to single threaded download - this error seems to happen for 0 size files with got
-			downloader := filedownloader.NewWithContext(ctx, retryhttp.NewHTTPClient().StandardClient())
+			downloader := filedownloader.NewWithContext(ctx, retryhttp.NewClient(ad.Logger).StandardClient())
 			err = downloader.Get(fileFullPath, downloadURL)
 		}
 
@@ -234,7 +234,7 @@ func (ad *ConcurrentArtifactDownloader) runExtractionCommand(cmd command.Command
 }
 
 func (ad *ConcurrentArtifactDownloader) createClient() *retryablehttp.Client {
-	client := retryhttp.NewHTTPClient()
+	client := retryhttp.NewClient(ad.Logger)
 	client.CheckRetry = func(ctx context.Context, resp *http.Response, err error) (bool, error) {
 		// We are using this default retry policy as part of the default client settings
 		shouldRetry, err := retryablehttp.DefaultRetryPolicy(ctx, resp, err)
