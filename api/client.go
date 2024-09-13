@@ -8,7 +8,7 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/bitrise-io/go-utils/retry"
+	"github.com/bitrise-io/go-utils/v2/retryhttp"
 )
 
 const (
@@ -22,7 +22,7 @@ type DefaultBitriseAPIClient struct {
 }
 
 func NewDefaultBitriseAPIClient(baseURL, authToken string) (DefaultBitriseAPIClient, error) {
-	httpClient := retry.NewHTTPClient().StandardClient()
+	httpClient := retryhttp.NewHTTPClient().StandardClient()
 	httpClient.Timeout = time.Second * bitriseAPIClientTimeout
 
 	c := DefaultBitriseAPIClient{

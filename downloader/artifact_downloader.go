@@ -13,14 +13,14 @@ import (
 	"time"
 
 	"github.com/bitrise-steplib/bitrise-step-pull-intermediate-files/api"
-	"github.com/hashicorp/go-retryablehttp"
 
-	"github.com/bitrise-io/go-utils/command"
 	"github.com/bitrise-io/go-utils/filedownloader"
-	"github.com/bitrise-io/go-utils/log"
 	"github.com/bitrise-io/go-utils/pathutil"
-	"github.com/bitrise-io/go-utils/retry"
-	"github.com/melbahja/got"
+	"github.com/bitrise-io/go-utils/v2/command"
+	"github.com/bitrise-io/go-utils/v2/log"
+	"github.com/bitrise-io/go-utils/v2/retryhttp"
+	"github.com/bitrise-io/got"
+	"github.com/hashicorp/go-retryablehttp"
 )
 
 const (
@@ -137,7 +137,7 @@ func (ad *ConcurrentArtifactDownloader) downloadFile(targetDir, fileName, downlo
 
 	if err != nil {
 		if err.Error() == "Response status code is not ok: 416" { // fallback to single threaded download - this error seems to happen for 0 size files with got
-			downloader := filedownloader.NewWithContext(ctx, retry.NewHTTPClient().StandardClient())
+			downloader := filedownloader.NewWithContext(ctx, retryhttp.NewHTTPClient().StandardClient())
 			err = downloader.Get(fileFullPath, downloadURL)
 		}
 
@@ -234,7 +234,7 @@ func (ad *ConcurrentArtifactDownloader) runExtractionCommand(cmd command.Command
 }
 
 func (ad *ConcurrentArtifactDownloader) createClient() *retryablehttp.Client {
-	client := retry.NewHTTPClient()
+	client := retryhttp.NewHTTPClient()
 	client.CheckRetry = func(ctx context.Context, resp *http.Response, err error) (bool, error) {
 		// We are using this default retry policy as part of the default client settings
 		shouldRetry, err := retryablehttp.DefaultRetryPolicy(ctx, resp, err)
