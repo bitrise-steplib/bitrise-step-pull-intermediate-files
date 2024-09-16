@@ -4,7 +4,7 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/bitrise-io/go-utils/log"
+	"github.com/bitrise-io/go-utils/v2/log"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 )
@@ -56,10 +56,10 @@ func Test_ListBuildArtifactDetails_concurrent_returnsArtifactListForMultipleBuil
 
 	mockClient := &mockBitriseAPIClient{}
 	mockClient.
-		On("ListBuildArtifacts", mock.AnythingOfTypeArgument("string"), mock.AnythingOfTypeArgument("string")).
+		On("ListBuildArtifacts", mock.AnythingOfType("string"), mock.AnythingOfType("string")).
 		Return(mockArtifactList, nil)
 
-	mockClient.On("ShowBuildArtifact", mock.AnythingOfTypeArgument("string"), mock.AnythingOfTypeArgument("string"), mock.AnythingOfTypeArgument("string")).Return(ArtifactResponseItemModel{IntermediateFileInfo: IntermediateFileInfo{EnvKey: "EnvKey"}}, nil)
+	mockClient.On("ShowBuildArtifact", mock.AnythingOfType("string"), mock.AnythingOfType("string"), mock.AnythingOfType("string")).Return(ArtifactResponseItemModel{IntermediateFileInfo: IntermediateFileInfo{EnvKey: "EnvKey"}}, nil)
 
 	testCases := []listConcurrencyTestCase{
 		{1, 1}, {3, 3}, {10, 1}, {1, 10}, {10, 10},
@@ -81,7 +81,7 @@ func Test_ListBuildArtifactDetails_returnsErrorWhenApiCallFails(t *testing.T) {
 
 	mockClient := &mockBitriseAPIClient{}
 	mockClient.
-		On("ListBuildArtifacts", mock.AnythingOfTypeArgument("string"), mock.AnythingOfTypeArgument("string")).
+		On("ListBuildArtifacts", mock.AnythingOfType("string"), mock.AnythingOfType("string")).
 		Return([]ArtifactListElementResponseModel{}, errors.New("API error"))
 
 	lister := newArtifactLister(mockClient, log.NewLogger())

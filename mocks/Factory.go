@@ -3,7 +3,7 @@
 package mocks
 
 import (
-	command "github.com/bitrise-io/go-utils/command"
+	command "github.com/bitrise-io/go-utils/v2/command"
 	mock "github.com/stretchr/testify/mock"
 )
 

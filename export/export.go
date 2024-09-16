@@ -3,8 +3,8 @@ package export
 import (
 	"fmt"
 
-	"github.com/bitrise-io/go-utils/env"
-	"github.com/bitrise-io/go-utils/log"
+	"github.com/bitrise-io/go-utils/v2/env"
+	"github.com/bitrise-io/go-utils/v2/log"
 )
 
 type OutputExporter struct {

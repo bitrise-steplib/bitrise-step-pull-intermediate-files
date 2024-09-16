@@ -11,11 +11,11 @@ import (
 
 	"github.com/bitrise-steplib/bitrise-step-pull-intermediate-files/api"
 	"github.com/bitrise-steplib/bitrise-step-pull-intermediate-files/mocks"
+
+	"github.com/bitrise-io/go-utils/pathutil"
+	"github.com/bitrise-io/go-utils/v2/log"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
-
-	"github.com/bitrise-io/go-utils/log"
-	"github.com/bitrise-io/go-utils/pathutil"
 )
 
 const relativeDownloadPath = "_tmp"

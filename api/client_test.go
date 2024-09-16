@@ -7,6 +7,7 @@ import (
 	"net/http/httptest"
 	"testing"
 
+	"github.com/bitrise-io/go-utils/v2/log"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -18,7 +19,8 @@ func Test_ShowBuildArtifact_returnsArtifactModel(t *testing.T) {
 	}))
 	defer svr.Close()
 
-	client, err := NewDefaultBitriseAPIClient(svr.URL, "token")
+	logger := log.NewLogger()
+	client, err := NewDefaultBitriseAPIClient(logger, svr.URL, "token")
 	assert.NoError(t, err)
 
 	artifact, showErr := client.ShowBuildArtifact("app-slug", "build-slug", "artifact-slug")
@@ -38,7 +40,8 @@ func Test_ShowBuildArtifact_unauthorizedError(t *testing.T) {
 	}))
 	defer svr.Close()
 
-	client, err := NewDefaultBitriseAPIClient(svr.URL, "token")
+	logger := log.NewLogger()
+	client, err := NewDefaultBitriseAPIClient(logger, svr.URL, "token")
 	assert.NoError(t, err)
 
 	artifact, showErr := client.ShowBuildArtifact("app-slug", "build-slug", "artifact-slug")
@@ -55,7 +58,8 @@ func Test_ListBuildArtifacts_no_paging_returnsListOfArtifacts(t *testing.T) {
 	}))
 	defer svr.Close()
 
-	client, err := NewDefaultBitriseAPIClient(svr.URL, "token")
+	logger := log.NewLogger()
+	client, err := NewDefaultBitriseAPIClient(logger, svr.URL, "token")
 	assert.NoError(t, err)
 
 	artifactList, showErr := client.ListBuildArtifacts("app-slug", "build-slug")
@@ -100,7 +104,8 @@ func Test_ListBuildArtifacts_paging_returnsListOfArtifacts(t *testing.T) {
 	}))
 	defer svr.Close()
 
-	client, err := NewDefaultBitriseAPIClient(svr.URL, "token")
+	logger := log.NewLogger()
+	client, err := NewDefaultBitriseAPIClient(logger, svr.URL, "token")
 	assert.NoError(t, err)
 
 	artifactList, showErr := client.ListBuildArtifacts("app-slug", "build-slug")
@@ -115,7 +120,8 @@ func Test_ListBuildArtifacts_unauthorizedError(t *testing.T) {
 	}))
 	defer svr.Close()
 
-	client, err := NewDefaultBitriseAPIClient(svr.URL, "token")
+	logger := log.NewLogger()
+	client, err := NewDefaultBitriseAPIClient(logger, svr.URL, "token")
 	assert.NoError(t, err)
 
 	artifactList, showErr := client.ListBuildArtifacts("app-slug", "build-slug")

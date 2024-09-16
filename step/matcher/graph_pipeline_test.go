@@ -4,7 +4,7 @@ import (
 	"sort"
 	"testing"
 
-	"github.com/bitrise-io/go-utils/log"
+	"github.com/bitrise-io/go-utils/v2/log"
 	"github.com/bitrise-steplib/bitrise-step-pull-intermediate-files/model"
 	"github.com/stretchr/testify/assert"
 )

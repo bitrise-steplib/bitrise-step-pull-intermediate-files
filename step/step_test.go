@@ -4,10 +4,11 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/bitrise-io/go-steputils/stepconf"
-	"github.com/bitrise-io/go-utils/command"
-	mockenv "github.com/bitrise-io/go-utils/env/mocks"
-	"github.com/bitrise-io/go-utils/log"
+	mockenv "github.com/bitrise-steplib/bitrise-step-pull-intermediate-files/mocks"
+
+	"github.com/bitrise-io/go-steputils/v2/stepconf"
+	"github.com/bitrise-io/go-utils/v2/command"
+	"github.com/bitrise-io/go-utils/v2/log"
 	"github.com/stretchr/testify/assert"
 )
 
