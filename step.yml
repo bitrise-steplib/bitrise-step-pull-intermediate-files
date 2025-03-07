@@ -51,11 +51,11 @@ inputs:
       A comma (`,`) separated list of Workflow names or Stage and Workflow paths, used to specify which workflows' artifacts to download.
     description: |-
       A comma (`,`) separated list of Workflow names or Stage and Workflow paths, used to specify which workflows' artifacts to download.
-      
+
       **Graph Pipelines:**
 
       Simply specify the workflow name directly. For example, `build` or `test`.
-      
+
       Examples:
       - `build` - Gets artifacts from the 'build' workflow.
       - `build,test` - Gets artifacts from both the 'build' and 'test' workflows.
@@ -66,7 +66,7 @@ inputs:
 
       The input uses a `{stage}.{workflow}` syntax.
       The dot character (`.`) is the delimiter between the Stage and the Workflow.
-      
+
       Examples:
       - `stage1.workflow1` - Gets artifacts from stage1's workflow1.
       - `stage1\..*` - Gets all artifacts from stage1's workflows.
