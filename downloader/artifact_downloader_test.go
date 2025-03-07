@@ -133,7 +133,7 @@ func Test_DownloadAndSaveZipDirectoryArtifacts(t *testing.T) {
 	targetDir, err := getDownloadDir(relativeDownloadPath)
 	assert.NoError(t, err)
 
-	downloadURL := fmt.Sprintf(svr.URL + "/1.zip")
+	downloadURL := fmt.Sprintf("%s/1.zip", svr.URL)
 	artifacts := []api.ArtifactResponseItemModel{
 		{
 			DownloadURL: downloadURL,
@@ -183,7 +183,7 @@ func Test_DownloadAndSaveTarDirectoryArtifacts(t *testing.T) {
 	targetDir, err := getDownloadDir(relativeDownloadPath)
 	assert.NoError(t, err)
 
-	downloadURL := fmt.Sprintf(svr.URL + "/1.tar")
+	downloadURL := fmt.Sprintf("%s/1.tar", svr.URL)
 	artifacts := []api.ArtifactResponseItemModel{
 		{
 			DownloadURL: downloadURL,
