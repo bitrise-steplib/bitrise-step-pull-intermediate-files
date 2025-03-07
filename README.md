@@ -31,7 +31,7 @@ To configure the Step:
 
 1. Specify which workflows' artifacts to download in the **Artifact source** input. By default, all workflows artifacts will be downloaded.
 
-  NOTE: You can list multiple artifacts by separating them using a comma. For example: `{stage1}.{workflow1},{stage2}.{workflow2}`
+  NOTE: You can list multiple artifacts by separating them using a comma. For example: `{stage1}.{workflow1},{stage1}.{workflow2}`
 
 2. (Optional) Set the **Enable verbose logging** input to `true` if you want to log additional information for debugging purposes.
 </details>
