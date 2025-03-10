@@ -255,13 +255,31 @@ workflows:
         - content: |-
             #!/bin/env bash
             set -ex
+            
+            # The `claim_token` below is a base64 encoded struct which describes to which builds and pipelines need to be accessed.
+            # It has the following format:
+            # {
+            #   "build_ids": [
+            #     "build-id-1",
+            #     "build-id-2",
+            #     "build-id-3",
+            #     "build-id-4",
+            #     "build-id-5"
+            #   ],
+            #   "pipeline_ids": [
+            #     "pipeline-id-1"
+            #   ]
+            # }
+            #
+            # This needs to be assembled and base64 encoded manually. Use the above BITRISEIO_FINISHED_STAGES json value
+            # and use all of the external_id values as build_ids. The pipeline identifier can be copied from the website.
 
             json_response=$(curl --fail -X POST https://auth.services.bitrise.io/auth/realms/bitrise-services/protocol/openid-connect/token -k \
                 --data "client_id=artifact-pull" \
                 --data "client_secret=$BITRISE_AUTH_SERVICE_ARTIFACT_PULL_CLIENT_SECRET" \
                 --data "grant_type=urn:ietf:params:oauth:grant-type:uma-ticket" \
                 --data "scope=build_artifact:read build:read app:read" \
-                --data "claim_token=ewogICJidWlsZF9pZHMiOiBbCiAgICAiYjczNWQ5YmUtOTE0Yi00MzZmLThiNjMtZmY1ZmE1NTA3NzU1IiwKICAgICI3OGFjNjg4ZS0zYjZlLTQ0N2UtOWMxYy1lNmMzZmQ0NTA3ZWIiLAogICAgIjYwMjgxNDE3LWIyZTktNDUwZS1hZWFhLTBmMDEwN2NkMjRlMyIsCiAgICAiMmI4NTczYWQtNzU1ZC00MjlmLTlkN2YtMmMxY2QxNTY3YTUxIiwKICAgICI3YzhlMDNlZi01NGFlLTQzOTAtODE3Yi02YTFiZmFjZTkwY2QiLAogICAgImE5ZmQyYjI0LWRkYzItNDNjMC05ZTMyLWM5ZGViNWU2NmQwYSIKICBdLAogICJwaXBlbGluZV9pZCI6IFsKICAgICJhYTAwY2YwNi01ZTNhLTQ1ZTAtYWExNC1iNDU0NzFjZTZhNjAiCiAgXQp9" \
+                --data "claim_token=ewogICJidWlsZF9pZHMiOiBbCiAgICAiYWIzMTY4Y2MtZTA3MS00NTUzLThiYmUtYTQyYTI1OTk1ZWRjIiwKICAgICJkNTU0NTUzNy03MmU3LTRjOGEtYTc5My1jYzQ2ZjRlNmU4ZTgiLAogICAgImM5OTcyMTFlLTZjNDQtNDY4Ni05NGYxLWU2MTFjYzJmYzRkYiIsCiAgICAiZjM2YWVkOGQtYmY2Ny00NjFhLWIxZWEtZDA0OWM2MjJlOGRjIiwKICAgICIxNmY1Mzk1Zi1kNjMxLTQ3ZjgtYmEyZS1mYzgxNjM4MTE1YTIiLAogICAgIjlhYzk1NWI4LWQwMDEtNDc4OS05YTU2LTA2NDgyMzUzOGM4YSIKICBdLAogICJwaXBlbGluZV9pZCI6IFsKICAgICI3NmQ3YjBmZS0xYjM0LTQ5OGItOGI2MS1mYTE1YmM3NThmMmMiCiAgXQp9" \
                 --data "claim_token_format=urn:ietf:params:oauth:token-type:jwt" \
                 --data "audience=bitrise-api")
 
