@@ -48,20 +48,32 @@ inputs:
   opts:
     title: Artifact source
     summary: |-
-      A comma (`,`) separated list of the Stage and Workflow paths (`{stage}.{workflow}`), used to specify which workflows' artifacts to download.
+      A comma (`,`) separated list of Workflow names or Stage and Workflow paths, used to specify which workflows' artifacts to download.
     description: |-
-      A comma (`,`) separated list of the Stage and Workflow paths (`{stage}.{workflow}`), used to specify which workflows' artifacts to download.
+      A comma (`,`) separated list of Workflow names or Stage and Workflow paths, used to specify which workflows' artifacts to download.
+
+      **Graph Pipelines:**
+
+      Simply specify the workflow name directly. For example, `build` or `test`.
+
+      Examples:
+      - `build` - Gets artifacts from the 'build' workflow.
+      - `build,test` - Gets artifacts from both the 'build' and 'test' workflows.
+      - `test.*` - Gets every generated artifact from all previous workflows with names starting with 'test'.
+      - `.*` - Gets every generated artifact from all previous workflows.
+
+      **Staged Pipelines:**
 
       The input uses a `{stage}.{workflow}` syntax.
       The dot character (`.`) is the delimiter between the Stage and the Workflow.
 
-      You can use regular expressions. Do not forget to escape the special characters.
-
       Examples:
-      - `stage1.workflow1` - Gets the artifacts from the stage1's workflow1.
-      - `stage1\..*` - Gets all artifacts from the stage1's workflows.
-      - `.*\.workflow1` - Gets workflow1s' artifacts from the previous stages.
-      - `.*` - Gets every generated artifacts from the previous stages.
+      - `stage1.workflow1` - Gets artifacts from stage1's workflow1.
+      - `stage1\..*` - Gets all artifacts from stage1's workflows.
+      - `.*\.workflow1` - Gets workflow1's artifacts from all previous stages.
+      - `.*` - Gets every generated artifact from all previous stages.
+
+      You can use regular expressions for both pipeline types. Remember to escape special characters.
     is_required: true
 
 - verbose: "false"
