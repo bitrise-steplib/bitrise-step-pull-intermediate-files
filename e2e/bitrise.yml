@@ -255,7 +255,7 @@ workflows:
         - content: |-
             #!/bin/env bash
             set -ex
-            
+
             # The `claim_token` below is a base64 encoded struct which describes to which builds and pipelines need to be accessed.
             # It has the following format:
             # {
