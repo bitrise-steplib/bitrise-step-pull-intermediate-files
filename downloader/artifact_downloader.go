@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"net/url"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -29,10 +30,17 @@ const (
 )
 
 type ArtifactDownloadResult struct {
-	DownloadError error
-	DownloadPath  string
-	DownloadURL   string
-	EnvKey        string
+	DownloadError   error
+	DownloadPath    string
+	DownloadURL     string
+	DownloadDetails TransferDetails
+	EnvKey          string
+}
+
+type TransferDetails struct {
+	Size     int64
+	Duration time.Duration
+	Hostname string
 }
 
 type downloadJob struct {
@@ -93,16 +101,17 @@ func (ad *ConcurrentArtifactDownloader) downloadParallel(artifacts []api.Artifac
 func (ad *ConcurrentArtifactDownloader) download(jobs <-chan downloadJob, results chan<- ArtifactDownloadResult) {
 	for j := range jobs {
 		var fileFullPath string
+		var details TransferDetails
 		var err error
 
 		switch {
 		case j.ResponseModel.IntermediateFileInfo.IsDir && filepath.Ext(j.ResponseModel.Title) == ".tar":
 			// Support deploy-to-bitrise-io version 2.1.2 and 2.1.3, which creates tar archives.
-			fileFullPath, err = ad.downloadAndExtractTarArchive(j.TargetDir, j.ResponseModel.Title, j.ResponseModel.DownloadURL)
+			fileFullPath, details, err = ad.downloadAndExtractTarArchive(j.TargetDir, j.ResponseModel.Title, j.ResponseModel.DownloadURL)
 		case j.ResponseModel.IntermediateFileInfo.IsDir:
-			fileFullPath, err = ad.downloadAndExtractZipArchive(j.TargetDir, j.ResponseModel.Title, j.ResponseModel.DownloadURL)
+			fileFullPath, details, err = ad.downloadAndExtractZipArchive(j.TargetDir, j.ResponseModel.Title, j.ResponseModel.DownloadURL)
 		default:
-			fileFullPath, err = ad.downloadFile(j.TargetDir, j.ResponseModel.Title, j.ResponseModel.DownloadURL)
+			fileFullPath, details, err = ad.downloadFile(j.TargetDir, j.ResponseModel.Title, j.ResponseModel.DownloadURL)
 		}
 
 		if err != nil {
@@ -110,17 +119,24 @@ func (ad *ConcurrentArtifactDownloader) download(jobs <-chan downloadJob, result
 			continue
 		}
 
-		results <- ArtifactDownloadResult{DownloadPath: fileFullPath, DownloadURL: j.ResponseModel.DownloadURL, EnvKey: j.ResponseModel.IntermediateFileInfo.EnvKey}
+		results <- ArtifactDownloadResult{
+			DownloadPath:    fileFullPath,
+			DownloadURL:     j.ResponseModel.DownloadURL,
+			DownloadDetails: details,
+			EnvKey:          j.ResponseModel.IntermediateFileInfo.EnvKey,
+		}
 	}
 }
 
-func (ad *ConcurrentArtifactDownloader) downloadFile(targetDir, fileName, downloadURL string) (string, error) {
+func (ad *ConcurrentArtifactDownloader) downloadFile(targetDir, fileName, downloadURL string) (string, TransferDetails, error) {
 	fileFullPath := filepath.Join(targetDir, fileName)
 
 	ctx, cancel := context.WithTimeout(context.Background(), ad.Timeout)
 
 	downloader := got.NewWithContext(ctx)
 	downloader.Client = ad.createClient().StandardClient()
+
+	start := time.Now()
 
 	err := downloader.Download(downloadURL, fileFullPath)
 
@@ -144,64 +160,81 @@ func (ad *ConcurrentArtifactDownloader) downloadFile(targetDir, fileName, downlo
 		if err != nil {
 			cancel()
 
-			return "", fmt.Errorf("unable to download file from %s: %w", downloadURL, err)
+			return "", TransferDetails{}, fmt.Errorf("unable to download file from %s: %w", downloadURL, err)
 		}
 	}
 
 	cancel()
 
-	return fileFullPath, nil
-}
-
-func (ad *ConcurrentArtifactDownloader) downloadAndExtractZipArchive(targetDir, fileName, downloadURL string) (string, error) {
-	tmpDir, err := pathutil.NormalizedOSTempDirPath("pull-intermediate-files")
-	if err != nil {
-		return "", err
+	details := TransferDetails{
+		Size:     fileSize(fileFullPath),
+		Duration: time.Since(start),
+		Hostname: extractHost(downloadURL),
 	}
 
-	fileFullPath, err := ad.downloadFile(tmpDir, fileName, downloadURL)
+	return fileFullPath, details, nil
+}
+
+func (ad *ConcurrentArtifactDownloader) downloadAndExtractZipArchive(targetDir, fileName, downloadURL string) (string, TransferDetails, error) {
+	tmpDir, err := pathutil.NormalizedOSTempDirPath("pull-intermediate-files")
 	if err != nil {
-		return "", err
+		return "", TransferDetails{}, err
+	}
+
+	fileFullPath, details, err := ad.downloadFile(tmpDir, fileName, downloadURL)
+	if err != nil {
+		return "", TransferDetails{}, err
 	}
 
 	dirName := strings.TrimSuffix(fileName, filepath.Ext(fileName))
 	dirPath := filepath.Join(targetDir, dirName)
 
 	if err := os.MkdirAll(dirPath, os.ModePerm); err != nil {
-		return "", err
+		return "", TransferDetails{}, err
 	}
 
 	if err := ad.extractZipArchive(fileFullPath, dirPath); err != nil {
-		return "", err
+		return "", TransferDetails{}, err
 	}
 
-	return dirPath, nil
+	return dirPath, details, nil
 }
 
-func (ad *ConcurrentArtifactDownloader) downloadAndExtractTarArchive(targetDir, fileName, downloadURL string) (string, error) {
+func (ad *ConcurrentArtifactDownloader) downloadAndExtractTarArchive(targetDir, fileName, downloadURL string) (string, TransferDetails, error) {
 	client := ad.createClient()
+
+	start := time.Now()
 
 	resp, err := client.Get(downloadURL)
 	if err != nil {
-		return "", err
+		return "", TransferDetails{}, err
 	}
+
+	duration := time.Since(start)
 
 	dirName := strings.TrimSuffix(fileName, filepath.Ext(fileName))
 	dirPath := filepath.Join(targetDir, dirName)
 
 	if err := os.MkdirAll(dirPath, os.ModePerm); err != nil {
-		return "", err
+		return "", TransferDetails{}, err
 	}
 
 	if err := ad.extractTarArchive(resp.Body, dirPath); err != nil {
-		return "", err
+		return "", TransferDetails{}, err
 	}
 
 	if err := resp.Body.Close(); err != nil {
 		ad.Logger.Warnf("Failed to close response body: %s", err)
 	}
 
-	return dirPath, nil
+	details := TransferDetails{
+		//TODO: How to calculate this?
+		Size:     0,
+		Duration: duration,
+		Hostname: extractHost(downloadURL),
+	}
+
+	return dirPath, details, nil
 }
 
 func (ad *ConcurrentArtifactDownloader) extractZipArchive(archivePath string, targetDir string) error {
@@ -250,4 +283,22 @@ func (ad *ConcurrentArtifactDownloader) createClient() *retryablehttp.Client {
 		return shouldRetry, err
 	}
 	return client
+}
+
+func extractHost(downloadURL string) string {
+	u, err := url.Parse(downloadURL)
+	if err != nil {
+		return "unknown"
+	}
+
+	return strings.TrimPrefix(u.Hostname(), "www.")
+}
+
+func fileSize(path string) int64 {
+	f, err := os.Stat(path)
+	if err != nil {
+		return -1
+	}
+
+	return f.Size()
 }
