@@ -228,8 +228,9 @@ func (ad *ConcurrentArtifactDownloader) downloadAndExtractTarArchive(targetDir, 
 	}
 
 	details := TransferDetails{
-		//TODO: How to calculate this?
-		Size:     0,
+		// Tar archives are not created by the deploy step anymore, so we should not run into this case.
+		// The tar command streams the data from the standard input, so we cannot get the size of the file easily.
+		Size:     -2,
 		Duration: duration,
 		Hostname: extractHost(downloadURL),
 	}
