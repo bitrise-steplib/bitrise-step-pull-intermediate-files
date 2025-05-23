@@ -134,6 +134,13 @@ func (d IntermediateFileDownloader) Run(cfg Config) (Result, error) {
 		return Result{}, fmt.Errorf("failed to download artifacts: %w", err)
 	}
 
+	tracker := newTracker(d.envRepository, d.logger)
+	defer tracker.wait()
+
+	for _, downloadResult := range downloadResults {
+		tracker.logFileTransfer(downloadResult.DownloadDetails, downloadResult.DownloadError)
+	}
+
 	intermediateFiles := map[string]string{}
 	for _, downloadResult := range downloadResults {
 		if downloadResult.DownloadError != nil {
