@@ -236,7 +236,7 @@ func Test_DownloadAndSaveTarDirectoryArtifacts(t *testing.T) {
 	assert.Equal(t, downloadURL, downloadResults[0].DownloadURL)
 	assert.Equal(t, "127.0.0.1", downloadResults[0].DownloadDetails.Hostname)
 	assert.Greater(t, downloadResults[0].DownloadDetails.Duration, time.Duration(0))
-	assert.Equal(t, int64(0), downloadResults[0].DownloadDetails.Size)
+	assert.Equal(t, int64(-2), downloadResults[0].DownloadDetails.Size)
 
 	cmd.AssertExpectations(t)
 	cmdFactory.AssertExpectations(t)
