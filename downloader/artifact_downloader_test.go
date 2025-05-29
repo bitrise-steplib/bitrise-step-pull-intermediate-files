@@ -14,6 +14,8 @@ import (
 
 	"github.com/bitrise-io/go-utils/pathutil"
 	"github.com/bitrise-io/go-utils/v2/log"
+	"github.com/google/go-cmp/cmp"
+	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 )
@@ -46,15 +48,39 @@ func Test_DownloadAndSaveArtifacts(t *testing.T) {
 		expectedDownloadResults = append(expectedDownloadResults, ArtifactDownloadResult{
 			DownloadPath: targetDir + fmt.Sprintf("/%d.txt", i),
 			DownloadURL:  downloadURL,
+			DownloadDetails: TransferDetails{
+				Size:     10,
+				Hostname: "127.0.0.1",
+			},
 		})
 	}
 
 	artifactDownloader := NewConcurrentArtifactDownloader(5*time.Minute, log.NewLogger(), nil)
 
 	downloadResults, err := artifactDownloader.DownloadAndSaveArtifacts(artifacts, targetDir)
-
 	assert.NoError(t, err)
-	assert.ElementsMatch(t, expectedDownloadResults, downloadResults)
+	assert.Equal(t, len(expectedDownloadResults), len(downloadResults))
+
+	getResult := func(downloadURL string) *ArtifactDownloadResult {
+		for _, result := range downloadResults {
+			if result.DownloadURL == downloadURL {
+				return &result
+			}
+		}
+		return nil
+	}
+
+	// We need to ignore the Duration field because it is not deterministic
+	ignoreFields := cmpopts.IgnoreFields(TransferDetails{}, "Duration")
+
+	for _, exp := range expectedDownloadResults {
+		result := getResult(exp.DownloadURL)
+		assert.NotNil(t, result)
+
+		if !cmp.Equal(exp, *result, ignoreFields) {
+			t.Errorf("Download results mismatch (-want +got):\n%s", cmp.Diff(exp, result, ignoreFields))
+		}
+	}
 
 	_ = os.RemoveAll(targetDir)
 }
@@ -143,12 +169,6 @@ func Test_DownloadAndSaveZipDirectoryArtifacts(t *testing.T) {
 			},
 		},
 	}
-	expectedDownloadResults := []ArtifactDownloadResult{
-		{
-			DownloadPath: targetDir + "/1",
-			DownloadURL:  downloadURL,
-		},
-	}
 
 	cmd := new(mocks.Command)
 	cmd.On("RunAndReturnTrimmedCombinedOutput").Return("", nil).Once()
@@ -159,9 +179,15 @@ func Test_DownloadAndSaveZipDirectoryArtifacts(t *testing.T) {
 	artifactDownloader := NewConcurrentArtifactDownloader(5*time.Minute, log.NewLogger(), cmdFactory)
 
 	downloadResults, err := artifactDownloader.DownloadAndSaveArtifacts(artifacts, targetDir)
-
 	assert.NoError(t, err)
-	assert.ElementsMatch(t, expectedDownloadResults, downloadResults)
+
+	assert.Equal(t, 1, len(downloadResults))
+	assert.Equal(t, targetDir+"/1", downloadResults[0].DownloadPath)
+	assert.Equal(t, downloadURL, downloadResults[0].DownloadURL)
+	assert.Equal(t, "127.0.0.1", downloadResults[0].DownloadDetails.Hostname)
+	assert.Greater(t, downloadResults[0].DownloadDetails.Duration, time.Duration(0))
+	assert.Equal(t, int64(10), downloadResults[0].DownloadDetails.Size)
+
 	cmd.AssertExpectations(t)
 	cmdFactory.AssertExpectations(t)
 	assert.Len(t, cmdFactory.Calls, 1)
@@ -193,12 +219,6 @@ func Test_DownloadAndSaveTarDirectoryArtifacts(t *testing.T) {
 			},
 		},
 	}
-	expectedDownloadResults := []ArtifactDownloadResult{
-		{
-			DownloadPath: targetDir + "/1",
-			DownloadURL:  downloadURL,
-		},
-	}
 
 	cmd := new(mocks.Command)
 	cmd.On("RunAndReturnTrimmedCombinedOutput").Return("", nil).Once()
@@ -209,9 +229,15 @@ func Test_DownloadAndSaveTarDirectoryArtifacts(t *testing.T) {
 	artifactDownloader := NewConcurrentArtifactDownloader(5*time.Minute, log.NewLogger(), cmdFactory)
 
 	downloadResults, err := artifactDownloader.DownloadAndSaveArtifacts(artifacts, targetDir)
-
 	assert.NoError(t, err)
-	assert.ElementsMatch(t, expectedDownloadResults, downloadResults)
+
+	assert.Equal(t, 1, len(downloadResults))
+	assert.Equal(t, targetDir+"/1", downloadResults[0].DownloadPath)
+	assert.Equal(t, downloadURL, downloadResults[0].DownloadURL)
+	assert.Equal(t, "127.0.0.1", downloadResults[0].DownloadDetails.Hostname)
+	assert.Greater(t, downloadResults[0].DownloadDetails.Duration, time.Duration(0))
+	assert.Equal(t, int64(-2), downloadResults[0].DownloadDetails.Size)
+
 	cmd.AssertExpectations(t)
 	cmdFactory.AssertExpectations(t)
 
