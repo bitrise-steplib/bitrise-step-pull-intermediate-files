@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"net/http/httputil"
 	"os"
 	"path/filepath"
 	"runtime"
@@ -93,6 +94,13 @@ func (d *Download) GetInfoOrDownload() (*Info, error) {
 		return &Info{}, err
 	}
 	defer res.Body.Close()
+
+	dump, err := httputil.DumpResponse(res, true)
+	if err != nil {
+		fmt.Printf("response dump failed: %s\n", err)
+	} else {
+		fmt.Printf("Response dump: %s\n", string(dump))
+	}
 
 	if res.StatusCode >= 300 {
 		return &Info{}, fmt.Errorf("Response status code is not ok: %d", res.StatusCode)

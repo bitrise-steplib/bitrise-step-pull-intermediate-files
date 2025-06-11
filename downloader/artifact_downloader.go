@@ -20,8 +20,8 @@ import (
 	"github.com/bitrise-io/go-utils/v2/command"
 	"github.com/bitrise-io/go-utils/v2/log"
 	"github.com/bitrise-io/go-utils/v2/retryhttp"
-	"github.com/bitrise-io/got"
 	"github.com/hashicorp/go-retryablehttp"
+	"github.com/tothszabi/got"
 )
 
 const (
