@@ -54,7 +54,7 @@ github.com/stretchr/objx
 ## explicit; go 1.17
 github.com/stretchr/testify/assert
 github.com/stretchr/testify/mock
-# github.com/tothszabi/got v0.0.0-20250611123837-17c0d127cda3
+# github.com/tothszabi/got v0.0.0-20250611162104-67908002d27d
 ## explicit; go 1.18
 github.com/tothszabi/got
 # gopkg.in/yaml.v3 v3.0.1

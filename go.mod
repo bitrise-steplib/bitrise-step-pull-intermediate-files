@@ -13,7 +13,7 @@ require (
 	github.com/google/go-cmp v0.7.0
 	github.com/hashicorp/go-retryablehttp v0.7.7
 	github.com/stretchr/testify v1.9.0
-	github.com/tothszabi/got v0.0.0-20250611123837-17c0d127cda3
+	github.com/tothszabi/got v0.0.0-20250611162104-67908002d27d
 )
 
 require (

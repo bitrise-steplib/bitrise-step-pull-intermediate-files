@@ -429,6 +429,9 @@ func (d *Download) DownloadChunk(ctx context.Context, dest *OffsetWriter, chunkE
 	}
 
 	contentRange := fmt.Sprintf("bytes=%d-%d", dest.offset, chunkEnd)
+
+	fmt.Printf("Requesting range: %s\n", contentRange)
+
 	req.Header.Set("Range", contentRange)
 
 	if res, err = d.Client.Do(req); err != nil {
@@ -509,6 +512,10 @@ func getDefaultChunkSize(totalSize, min, max, concurrency uint64) uint64 {
 	// When chunk size > total file size, divide chunk / 2
 	if cs >= totalSize {
 		cs = totalSize / 2
+	}
+
+	if totalSize <= 10 {
+		cs = totalSize
 	}
 
 	return cs

@@ -41,6 +41,8 @@ github.com/stretchr/testify v1.9.0 h1:HtqpIVDClZ4nwg75+f6Lvsy/wHu+3BoSGCbBAcpTsT
 github.com/stretchr/testify v1.9.0/go.mod h1:r2ic/lqez/lEtzL7wO/rwa5dbSLXVDPFyf8C91i36aY=
 github.com/tothszabi/got v0.0.0-20250611123837-17c0d127cda3 h1:g4FQ3ON36cJWgBhtNdoV6o3kRQ7bB/cPGx8cC+06m/A=
 github.com/tothszabi/got v0.0.0-20250611123837-17c0d127cda3/go.mod h1:J9ZBKrVTL7S3qvu5L4rHv/6P8lxQgRRvVE1siJydWJY=
+github.com/tothszabi/got v0.0.0-20250611162104-67908002d27d h1:5Z0pH2um+/BhoD6cfbHUQz1i1eZhh7cjhegJdJKQsUk=
+github.com/tothszabi/got v0.0.0-20250611162104-67908002d27d/go.mod h1:J9ZBKrVTL7S3qvu5L4rHv/6P8lxQgRRvVE1siJydWJY=
 golang.org/x/crypto v0.0.0-20211202192323-5770296d904e/go.mod h1:IxCIyHEi3zRg3s0A5j5BB6A9Jmi73HwBIUl50j+osU4=
 golang.org/x/net v0.0.0-20211112202133-69e39bad7dc2/go.mod h1:9nx3DQGgdP8bBQD5qxJ1jj9UTztislL4KSBs9R2vV5Y=
 golang.org/x/sys v0.0.0-20201119102817-f84b799fce68/go.mod h1:h1NjWce9XRLGQEsW7wpKNCjG9DtNlClVuFLEZdDNbEs=
