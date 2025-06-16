@@ -21,7 +21,7 @@ github.com/bitrise-io/go-utils/v2/log
 github.com/bitrise-io/go-utils/v2/log/colorstring
 github.com/bitrise-io/go-utils/v2/pathutil
 github.com/bitrise-io/go-utils/v2/retryhttp
-# github.com/bitrise-io/got v0.0.0-20240902113940-25f6469d1456
+# github.com/bitrise-io/got v0.0.0-20250613112826-9af8c0e04db5
 ## explicit; go 1.18
 github.com/bitrise-io/got
 # github.com/davecgh/go-spew v1.1.1
