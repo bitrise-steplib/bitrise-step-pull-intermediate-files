@@ -140,12 +140,11 @@ func Test_DownloadAndSaveArtifacts_RetriesFailingDownload(t *testing.T) {
 
 	assert.NoError(t, err)
 	// Total request count is:
-	// 1 + 2 * 5 = 11
+	// 1 + 5 = 6
 	// -----
 	// 1 -> initial request to get the content range
-	// 2 * -> the library uses a min of 2 concurrent downloads
 	// 5 -> first request + 4 retries
-	assert.Equal(t, uint64(11), receivedRequestCount.Load())
+	assert.Equal(t, uint64(6), receivedRequestCount.Load())
 
 	_ = os.RemoveAll(targetDir)
 }
