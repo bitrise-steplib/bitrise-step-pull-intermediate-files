@@ -145,6 +145,8 @@ func (ad *ConcurrentArtifactDownloader) downloadFile(targetDir, fileName, downlo
 
 		cancel()
 
+		start = time.Now()
+
 		ctx, cancel = context.WithTimeout(context.Background(), ad.Timeout)
 		downloader := got.NewWithContext(ctx)
 		downloader.Client = ad.createClient().StandardClient()
@@ -152,7 +154,13 @@ func (ad *ConcurrentArtifactDownloader) downloadFile(targetDir, fileName, downlo
 	}
 
 	if err != nil {
-		if err.Error() == "Response status code is not ok: 416" { // fallback to single threaded download - this error seems to happen for 0 size files with got
+		// fallback to single threaded download - the error with the 416 status code seems to happen for 0 size files with got
+		errorMessage := err.Error()
+		if errorMessage == "Response status code is not ok: 416" || strings.Contains(errorMessage, "unexpected EOF") {
+			ad.Logger.Warnf("Multi threaded download failed, switching to single threaded download")
+
+			start = time.Now()
+
 			downloader := filedownloader.NewWithContext(ctx, retryhttp.NewClient(ad.Logger).StandardClient())
 			err = downloader.Get(fileFullPath, downloadURL)
 		}
@@ -160,7 +168,13 @@ func (ad *ConcurrentArtifactDownloader) downloadFile(targetDir, fileName, downlo
 		if err != nil {
 			cancel()
 
-			return "", TransferDetails{}, fmt.Errorf("unable to download file from %s: %w", downloadURL, err)
+			details := TransferDetails{
+				Size:     fileSize(fileFullPath),
+				Duration: time.Since(start),
+				Hostname: extractHost(downloadURL),
+			}
+
+			return "", details, fmt.Errorf("unable to download file from %s: %w", downloadURL, err)
 		}
 	}
 
@@ -183,18 +197,18 @@ func (ad *ConcurrentArtifactDownloader) downloadAndExtractZipArchive(targetDir, 
 
 	fileFullPath, details, err := ad.downloadFile(tmpDir, fileName, downloadURL)
 	if err != nil {
-		return "", TransferDetails{}, err
+		return "", details, err
 	}
 
 	dirName := strings.TrimSuffix(fileName, filepath.Ext(fileName))
 	dirPath := filepath.Join(targetDir, dirName)
 
 	if err := os.MkdirAll(dirPath, os.ModePerm); err != nil {
-		return "", TransferDetails{}, err
+		return "", details, err
 	}
 
 	if err := ad.extractZipArchive(fileFullPath, dirPath); err != nil {
-		return "", TransferDetails{}, err
+		return "", details, err
 	}
 
 	return dirPath, details, nil
@@ -210,29 +224,27 @@ func (ad *ConcurrentArtifactDownloader) downloadAndExtractTarArchive(targetDir, 
 		return "", TransferDetails{}, err
 	}
 
-	duration := time.Since(start)
+	details := TransferDetails{
+		// Tar archives are not created by the deploy step anymore, so we should not run into this case.
+		// The tar command streams the data from the standard input, so we cannot get the size of the file easily.
+		Size:     -2,
+		Duration: time.Since(start),
+		Hostname: extractHost(downloadURL),
+	}
 
 	dirName := strings.TrimSuffix(fileName, filepath.Ext(fileName))
 	dirPath := filepath.Join(targetDir, dirName)
 
 	if err := os.MkdirAll(dirPath, os.ModePerm); err != nil {
-		return "", TransferDetails{}, err
+		return "", details, err
 	}
 
 	if err := ad.extractTarArchive(resp.Body, dirPath); err != nil {
-		return "", TransferDetails{}, err
+		return "", details, err
 	}
 
 	if err := resp.Body.Close(); err != nil {
 		ad.Logger.Warnf("Failed to close response body: %s", err)
-	}
-
-	details := TransferDetails{
-		// Tar archives are not created by the deploy step anymore, so we should not run into this case.
-		// The tar command streams the data from the standard input, so we cannot get the size of the file easily.
-		Size:     -2,
-		Duration: duration,
-		Hostname: extractHost(downloadURL),
 	}
 
 	return dirPath, details, nil
@@ -282,6 +294,15 @@ func (ad *ConcurrentArtifactDownloader) createClient() *retryablehttp.Client {
 		}
 
 		return shouldRetry, err
+	}
+	client.ErrorHandler = func(resp *http.Response, err error, numTries int) (*http.Response, error) {
+		statusCode := -1
+		if resp != nil {
+			statusCode = resp.StatusCode
+		}
+		ad.Logger.Warnf("After %d retries http status: %d, error: %s", numTries, statusCode, err)
+
+		return resp, err
 	}
 	return client
 }
