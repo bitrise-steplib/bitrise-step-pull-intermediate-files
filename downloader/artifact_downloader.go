@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"net"
 	"net/http"
 	"net/url"
 	"os"
@@ -17,6 +18,7 @@ import (
 
 	"github.com/bitrise-io/go-utils/filedownloader"
 	"github.com/bitrise-io/go-utils/pathutil"
+	"github.com/bitrise-io/go-utils/retry"
 	"github.com/bitrise-io/go-utils/v2/command"
 	"github.com/bitrise-io/go-utils/v2/log"
 	"github.com/bitrise-io/go-utils/v2/retryhttp"
@@ -133,30 +135,14 @@ func (ad *ConcurrentArtifactDownloader) downloadFile(targetDir, fileName, downlo
 
 	ctx, cancel := context.WithTimeout(context.Background(), ad.Timeout)
 
-	downloader := got.NewWithContext(ctx)
-	downloader.Client = ad.createClient().StandardClient()
-
 	start := time.Now()
 
-	err := downloader.Download(downloadURL, fileFullPath)
-
-	if err != nil && errors.Is(err, context.DeadlineExceeded) {
-		ad.Logger.Warnf("Download duration exceeded %s, second attempt", ad.Timeout)
-
-		cancel()
-
-		start = time.Now()
-
-		ctx, cancel = context.WithTimeout(context.Background(), ad.Timeout)
-		downloader := got.NewWithContext(ctx)
-		downloader.Client = ad.createClient().StandardClient()
-		err = downloader.Download(downloadURL, fileFullPath)
-	}
+	err := downloadWithRetry(ctx, ad.createClient(), downloadURL, fileFullPath, ad.Logger)
 
 	if err != nil {
 		// fallback to single threaded download - the error with the 416 status code seems to happen for 0 size files with got
 		errorMessage := err.Error()
-		if errorMessage == "Response status code is not ok: 416" || strings.Contains(errorMessage, "unexpected EOF") {
+		if strings.Contains(errorMessage, "Response status code is not ok: 416") || strings.Contains(errorMessage, "unexpected EOF") {
 			ad.Logger.Warnf("Multi threaded download failed, switching to single threaded download")
 
 			start = time.Now()
@@ -323,4 +309,45 @@ func fileSize(path string) int64 {
 	}
 
 	return f.Size()
+}
+
+func downloadWithRetry(ctx context.Context, httpClient *retryablehttp.Client, url, dest string, logger log.Logger) error {
+	return retry.Times(3).Wait(5 * time.Second).TryWithAbort(func(attempt uint) (error, bool) {
+		if attempt != 0 {
+			logger.Debugf("Retrying intermediate file download... (attempt %d)", attempt+1)
+		}
+
+		logger.Debugf("Downloading intermediate file...")
+		downloadErr := download(ctx, httpClient, url, dest, logger)
+		if downloadErr != nil {
+			logger.Debugf("Failed to download intermediate file: %s", downloadErr)
+			return fmt.Errorf("failed to download intermediate file: %w", downloadErr), false
+		}
+
+		return nil, false
+	})
+}
+
+func download(ctx context.Context, httpClient *retryablehttp.Client, url string, dest string, logger log.Logger) error {
+	httpClient.HTTPClient.Transport.(*http.Transport).ForceAttemptHTTP2 = false
+	httpClient.HTTPClient.Transport.(*http.Transport).DialContext = (&net.Dialer{
+		Timeout:   30 * time.Second,
+		KeepAlive: 30 * time.Second,
+		DualStack: false,
+	}).DialContext
+
+	downloader := got.New()
+	downloader.Client = httpClient.StandardClient()
+
+	gDownload := got.NewDownload(ctx, url, dest)
+	// Client has to be set on "Download" as well,
+	// as depending on how downloader is called
+	// either the Client from the downloader or from the Download will be used.
+	gDownload.Client = httpClient.StandardClient()
+	gDownload.Concurrency = 0
+	gDownload.Logger = logger
+	gDownload.MaxRetryPerChunk = 5
+	gDownload.ChunkRetryThreshold = 10 * time.Second
+
+	return downloader.Do(gDownload)
 }
