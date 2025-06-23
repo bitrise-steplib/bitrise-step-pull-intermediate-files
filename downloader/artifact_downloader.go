@@ -145,6 +145,10 @@ func (ad *ConcurrentArtifactDownloader) downloadFile(targetDir, fileName, downlo
 		if strings.Contains(errorMessage, "Response status code is not ok: 416") || strings.Contains(errorMessage, "unexpected EOF") {
 			ad.Logger.Warnf("Multi threaded download failed, switching to single threaded download")
 
+			cancel()
+
+			ctx, cancel = context.WithTimeout(context.Background(), ad.Timeout)
+
 			start = time.Now()
 
 			downloader := filedownloader.NewWithContext(ctx, retryhttp.NewClient(ad.Logger).StandardClient())
