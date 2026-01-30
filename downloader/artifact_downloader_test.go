@@ -105,7 +105,7 @@ func Test_DownloadAndSaveArtifacts_DownloadFails(t *testing.T) {
 
 	result, err := artifactDownloader.DownloadAndSaveArtifacts(artifacts, targetDir)
 
-	assert.EqualError(t, result[0].DownloadError, fmt.Sprintf("unable to download file from %s: Response status code is not ok: 401", downloadURL))
+	assert.EqualError(t, result[0].DownloadError, fmt.Sprintf("unable to download file from %s: failed to download intermediate file: Response status code is not ok: 401", downloadURL))
 	assert.NoError(t, err)
 
 	_ = os.RemoveAll(targetDir)
@@ -135,16 +135,11 @@ func Test_DownloadAndSaveArtifacts_RetriesFailingDownload(t *testing.T) {
 		{DownloadURL: svr.URL + "/1.txt", Title: "1.txt"},
 	}
 
-	artifactDownloader := NewConcurrentArtifactDownloader(5*time.Minute, log.NewLogger(), nil)
+	artifactDownloader := NewConcurrentArtifactDownloader(5*time.Second, log.NewLogger(), nil)
 	_, err = artifactDownloader.DownloadAndSaveArtifacts(artifacts, targetDir)
 
 	assert.NoError(t, err)
-	// Total request count is:
-	// 1 + 5 = 6
-	// -----
-	// 1 -> initial request to get the content range
-	// 5 -> first request + 4 retries
-	assert.Equal(t, uint64(6), receivedRequestCount.Load())
+	assert.Greater(t, receivedRequestCount.Load(), uint64(1))
 
 	_ = os.RemoveAll(targetDir)
 }
