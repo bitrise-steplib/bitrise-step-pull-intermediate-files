@@ -7,23 +7,23 @@ app:
   - BITRISEIO_FINISHED_STAGES: |-
         [
             {
-                "created_at": "2026-03-31T13:13:19.251111Z",
-                "finished_at": "2026-03-31T13:13:55Z",
-                "id": "a75d2d16-d753-4fb7-a8c1-e1ec59ac0705",
+                "created_at": "2026-03-31T16:05:12.375897Z",
+                "finished_at": "2026-03-31T16:06:03Z",
+                "id": "80ce9f09-a7d5-4e0b-b24f-3fdea8a60e9c",
                 "name": "stage-1",
                 "put_on_hold_at": null,
-                "started_at": "2026-03-31T13:13:23Z",
+                "started_at": "2026-03-31T16:05:16Z",
                 "status": "succeeded",
-                "triggered_at": "2026-03-31T13:13:19.546066Z",
+                "triggered_at": "2026-03-31T16:05:12.700658Z",
                 "workflows": [
                 {
                     "credit_cost": 0,
                     "depends_on": null,
-                    "external_id": "ef4fc483-0db0-4214-b512-2d522c9a72c2",
-                    "finished_at": "2026-03-31T13:13:55Z",
-                    "id": "3b8b70d6-ce5e-427c-91be-327c18fc434d",
+                    "external_id": "ea9e4eb8-5a8b-4bfe-b71d-abdfc9aed306",
+                    "finished_at": "2026-03-31T16:05:19Z",
+                    "id": "9380226f-0450-4a30-a778-037685ff7fa9",
                     "name": "placeholder",
-                    "started_at": "2026-03-31T13:13:52Z",
+                    "started_at": "2026-03-31T16:05:16Z",
                     "status": {
                     "Name": "succeeded",
                     "StatusLevel": 5
@@ -32,11 +32,11 @@ app:
                 {
                     "credit_cost": 0,
                     "depends_on": null,
-                    "external_id": "640695a8-ad88-40d6-917b-c463c429da5b",
-                    "finished_at": "2026-03-31T13:13:42Z",
-                    "id": "372ddd21-55bf-44aa-b74a-6928f8db758c",
+                    "external_id": "3fccc821-b32e-483b-a71e-63c7a195aec9",
+                    "finished_at": "2026-03-31T16:06:03Z",
+                    "id": "1bc12fcf-2128-467d-af93-b97842d2aeaa",
                     "name": "textfile_generator",
-                    "started_at": "2026-03-31T13:13:23Z",
+                    "started_at": "2026-03-31T16:05:51Z",
                     "status": {
                     "Name": "succeeded",
                     "StatusLevel": 5
@@ -45,23 +45,23 @@ app:
                 ]
             },
             {
-                "created_at": "2026-03-31T13:13:19.251111Z",
-                "finished_at": "2026-03-31T13:14:57Z",
-                "id": "8a58ed86-2b8c-4f54-accc-54dcfdc96d71",
+                "created_at": "2026-03-31T16:05:12.375897Z",
+                "finished_at": "2026-03-31T16:07:15Z",
+                "id": "eed0e698-643a-4229-a272-0dce571f317a",
                 "name": "stage-2",
                 "put_on_hold_at": null,
-                "started_at": "2026-03-31T13:14:28Z",
+                "started_at": "2026-03-31T16:06:27Z",
                 "status": "succeeded",
-                "triggered_at": "2026-03-31T13:13:55.511577Z",
+                "triggered_at": "2026-03-31T16:06:03.841656Z",
                 "workflows": [
                 {
                     "credit_cost": 0,
                     "depends_on": null,
-                    "external_id": "68e8d22b-c7b4-4d8b-997f-b9202445b592",
-                    "finished_at": "2026-03-31T13:14:41Z",
-                    "id": "d26961fc-c34f-4e4b-91ec-12bcfdbd65eb",
+                    "external_id": "d6652a65-90b3-438f-a048-e16848538a1e",
+                    "finished_at": "2026-03-31T16:07:15Z",
+                    "id": "b032888b-f89a-4de6-ad53-19b40d784bae",
                     "name": "deployer",
-                    "started_at": "2026-03-31T13:14:28Z",
+                    "started_at": "2026-03-31T16:07:00Z",
                     "status": {
                     "Name": "succeeded",
                     "StatusLevel": 5
@@ -70,11 +70,11 @@ app:
                 {
                     "credit_cost": 0,
                     "depends_on": null,
-                    "external_id": "a4e39bd5-912e-48a1-ab6a-ea9143ef39f5",
-                    "finished_at": "2026-03-31T13:14:57Z",
-                    "id": "41571e26-ddbf-4091-9107-4b8cf41b5bf5",
+                    "external_id": "b0fce47e-020e-43ce-bdb5-3aeb9527d6e3",
+                    "finished_at": "2026-03-31T16:07:04Z",
+                    "id": "b019a21d-15e9-4ad2-a125-8c3b15a89327",
                     "name": "zip_archive_generator_en",
-                    "started_at": "2026-03-31T13:14:45Z",
+                    "started_at": "2026-03-31T16:06:51Z",
                     "status": {
                     "Name": "succeeded",
                     "StatusLevel": 5
@@ -83,11 +83,11 @@ app:
                 {
                     "credit_cost": 0,
                     "depends_on": null,
-                    "external_id": "00b3544d-ce7b-47b7-8910-4a36b91db8d9",
-                    "finished_at": "2026-03-31T13:14:49Z",
-                    "id": "fe7a93ef-6b90-445a-99b7-797b098fe044",
+                    "external_id": "929b35db-075d-4511-947d-8796b6bfac44",
+                    "finished_at": "2026-03-31T16:06:40Z",
+                    "id": "11da1e81-8bc8-4031-b99b-22b0b2373dc3",
                     "name": "tar_archive_generator",
-                    "started_at": "2026-03-31T13:14:37Z",
+                    "started_at": "2026-03-31T16:06:27Z",
                     "status": {
                     "Name": "succeeded",
                     "StatusLevel": 5
@@ -96,23 +96,23 @@ app:
                 ]
             },
             {
-                "created_at": "2026-03-31T13:13:19.251111Z",
-                "finished_at": "2026-03-31T13:15:11Z",
-                "id": "9bc95c04-b3d0-429d-9611-8fa1a3cfd5d5",
+                "created_at": "2026-03-31T16:05:12.375897Z",
+                "finished_at": "2026-03-31T16:07:37Z",
+                "id": "0aac4ad2-6117-414e-b1bc-2b8ea20b6460",
                 "name": "stage-3",
                 "put_on_hold_at": null,
-                "started_at": "2026-03-31T13:15:00Z",
+                "started_at": "2026-03-31T16:07:26Z",
                 "status": "succeeded",
-                "triggered_at": "2026-03-31T13:14:57.303724Z",
+                "triggered_at": "2026-03-31T16:07:15.80554Z",
                 "workflows": [
                 {
                     "credit_cost": null,
                     "depends_on": null,
-                    "external_id": "fc0b37ff-cbce-4d34-9b29-4f3086e5aabb",
-                    "finished_at": "2026-03-31T13:15:11Z",
-                    "id": "8b578de9-0af9-4d32-a17b-236964c65e06",
+                    "external_id": "25d309b6-ba17-47b0-a166-ff2e2cd3bd96",
+                    "finished_at": "2026-03-31T16:07:37Z",
+                    "id": "4c6415d7-70b3-4c6d-ad5a-28873b635612",
                     "name": "zip_archive_generator_jp",
-                    "started_at": "2026-03-31T13:15:00Z",
+                    "started_at": "2026-03-31T16:07:26Z",
                     "status": {
                     "Name": "succeeded",
                     "StatusLevel": 5
@@ -279,7 +279,7 @@ workflows:
                 --data "client_secret=$BITRISE_AUTH_SERVICE_ARTIFACT_PULL_CLIENT_SECRET" \
                 --data "grant_type=urn:ietf:params:oauth:grant-type:uma-ticket" \
                 --data "scope=build_artifact:read build:read app:read" \
-                --data "claim_token=ewogICJidWlsZF9pZHMiOiBbCiAgICAiZWY0ZmM0ODMtMGRiMC00MjE0LWI1MTItMmQ1MjJjOWE3MmMyIiwKICAgICI2NDA2OTVhOC1hZDg4LTQwZDYtOTE3Yi1jNDYzYzQyOWRhNWIiLAogICAgIjY4ZThkMjJiLWM3YjQtNGQ4Yi05OTdmLWI5MjAyNDQ1YjU5MiIsCiAgICAiYTRlMzliZDUtOTEyZS00OGExLWFiNmEtZWE5MTQzZWYzOWY1IiwKICAgICIwMGIzNTQ0ZC1jZTdiLTQ3YjctODkxMC00YTM2YjkxZGI4ZDkiLAogICAgImZjMGIzN2ZmLWNiY2UtNGQzNC05YjI5LTRmMzA4NmU1YWFiYiIKICBdLAogICJwaXBlbGluZV9pZCI6IFsKICAgICJjOGRkM2U4My01Zjk4LTQxMjItYmY2Zi0yNmRkNGIyMjFiMjkiCiAgXQp9" \
+                --data "claim_token=ewogICJidWlsZF9pZHMiOiBbCiAgICAiZWE5ZTRlYjgtNWE4Yi00YmZlLWI3MWQtYWJkZmM5YWVkMzA2IiwKICAgICIzZmNjYzgyMS1iMzJlLTQ4M2ItYTcxZS02M2M3YTE5NWFlYzkiLAogICAgImQ2NjUyYTY1LTkwYjMtNDM4Zi1hMDQ4LWUxNjg0ODUzOGExZSIsCiAgICAiYjBmY2U0N2UtMDIwZS00M2NlLWJkYjUtM2FlYjk1MjdkNmUzIiwKICAgICI5MjliMzVkYi0wNzVkLTQ1MTEtOTQ3ZC04Nzk2YjZiZmFjNDQiLAogICAgIjI1ZDMwOWI2LWJhMTctNDdiMC1hMTY2LWZmMmUyY2QzYmQ5NiIKICBdLAogICJwaXBlbGluZV9pZCI6IFsKICAgICIyYWVlMTAxMy01NmZiLTQ2YjgtYTI4Ny01M2YwZjMxNmM0ZjUiCiAgXQp9" \
                 --data "claim_token_format=urn:ietf:params:oauth:token-type:jwt" \
                 --data "audience=bitrise-api")
 
