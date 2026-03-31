@@ -1,6 +1,79 @@
 #### Examples
 
-##### Basic step config
+##### Graph pipeline
+
+###### Basic step config
+
+```yaml
+steps:
+- pull-intermediate-files@1:
+    inputs:
+    - verbose: "true"
+    - artifact_sources: build
+```
+
+Use the `artifact_sources` input variable to limit the downloads to a set of workflows. Simply specify the Workflow name directly — no stage prefix is needed:
+
+- `build` - Gets intermediate files from the 'build' Workflow.
+- `build,test` - Gets intermediate files from both the 'build' and 'test' Workflows.
+- `test.*` - Gets every intermediate file from all previous Workflows with names starting with 'test'.
+- `.*` - Gets every intermediate file from all previous Workflows.
+
+###### Wildcard based artifact pull
+
+During a pipeline, workflows receive the finished workflows object. Developers can find it on a build VM's environment variable: `BITRISEIO_FINISHED_WORKFLOWS`.
+
+Let's suppose that we get the following JSON object about the previously finished workflows.
+
+```json
+[
+  {
+    "external_id": "73d33fb5-35c6-495f-bd80-015ae681db33",
+    "finished_at": "2021-12-07T14:04:45Z",
+    "id": "b1c6f0a1-06e7-4f63-a172-ac541a467d71",
+    "name": "build",
+    "started_at": "2021-12-07T14:04:27Z",
+    "status": "succeeded"
+  },
+  {
+    "external_id": "39404bee-52ba-4ca2-8508-91489e7f6afa",
+    "finished_at": "2021-12-07T14:05:07Z",
+    "id": "f3bda7bb-37be-409f-9291-b377717cba60",
+    "name": "test",
+    "started_at": "2021-12-07T14:04:48Z",
+    "status": "succeeded"
+  },
+  {
+    "external_id": "ed0da0cf-66cc-4109-b23f-8a156d61b0c3",
+    "finished_at": "2021-12-07T14:06:41Z",
+    "id": "f572ca4e-2f06-40f1-a4cf-c208af15ff28",
+    "name": "deploy",
+    "started_at": "2021-12-07T14:06:13Z",
+    "status": "succeeded"
+  }
+]
+```
+
+As the key names in the object are self-describing, we will not cover those names except the `external_id`. The `external_id` is the build's slug in the PipelineService context.
+
+Let's see the following use-cases, the use cases first part is the demand, the second is the `artifact_sources` config:
+
+- As a developer, I would like to get the build artifact(s) of the _build_ workflow: `build`.
+
+- As a developer, I would like to get the build artifact(s) of both the _build_ and _test_ workflows: `build,test`. The two expressions are separated by a comma.
+
+- As a developer, I would like to retrieve already generated artifacts from all previous workflows: `.*`. As the example shows, developers can use regex.
+
+- As a developer, I would like to get artifacts from all workflows whose names start with _test_: `test.*`.
+
+And so on. The syntax is: `{workflow-name}`.
+Do not forget to escape the special characters when using a regex pattern.
+
+---
+
+##### Staged pipeline
+
+###### Basic step config
 
 ```yaml
 steps:
@@ -17,7 +90,7 @@ Use the `artifact_sources` input variable to limit the downloads to a set of sta
 - `.*\.workflow1` - Gets workflow1s' artifacts from the previous stages.
 - `.*` - Gets every generated artifacts from the previous stages.
 
-##### Wildcard based artifact pull
+###### Wildcard based artifact pull
 
 During a pipeline, workflows receive the finished stages and workflows object. Developers can find it on a build VM's environment variable: `BITRISEIO_FINISHED_STAGES`.
 
