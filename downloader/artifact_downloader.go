@@ -138,7 +138,6 @@ func (ad *ConcurrentArtifactDownloader) downloadFile(targetDir, fileName, downlo
 	start := time.Now()
 
 	err := downloadWithRetry(ctx, ad.createClient(), downloadURL, fileFullPath, ad.Logger)
-
 	if err != nil {
 		// fallback to single threaded download - the error with the 416 status code seems to happen for 0 size files with got
 		errorMessage := err.Error()
@@ -316,7 +315,7 @@ func fileSize(path string) int64 {
 }
 
 func downloadWithRetry(ctx context.Context, httpClient *retryablehttp.Client, url, dest string, logger log.Logger) error {
-	return retry.Times(3).Wait(5 * time.Second).TryWithAbort(func(attempt uint) (error, bool) {
+	return retry.Times(5).Wait(5 * time.Second).TryWithAbort(func(attempt uint) (error, bool) {
 		if attempt != 0 {
 			logger.Debugf("Retrying intermediate file download... (attempt %d)", attempt+1)
 		}
@@ -333,12 +332,15 @@ func downloadWithRetry(ctx context.Context, httpClient *retryablehttp.Client, ur
 }
 
 func download(ctx context.Context, httpClient *retryablehttp.Client, url string, dest string, logger log.Logger) error {
-	httpClient.HTTPClient.Transport.(*http.Transport).ForceAttemptHTTP2 = false
-	httpClient.HTTPClient.Transport.(*http.Transport).DialContext = (&net.Dialer{
-		Timeout:   30 * time.Second,
-		KeepAlive: 30 * time.Second,
-		DualStack: false,
-	}).DialContext
+	if t, ok := httpClient.HTTPClient.Transport.(*http.Transport); ok {
+		t.ForceAttemptHTTP2 = false
+		t.DialContext = (&net.Dialer{
+			Timeout:   30 * time.Second,
+			KeepAlive: 30 * time.Second,
+			DualStack: false,
+		}).DialContext
+		t.ResponseHeaderTimeout = 30 * time.Second
+	}
 
 	downloader := got.New()
 	downloader.Client = httpClient.StandardClient()

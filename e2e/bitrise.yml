@@ -7,117 +7,117 @@ app:
   - BITRISEIO_FINISHED_STAGES: |-
         [
             {
-                "created_at": "2025-03-07T12:58:39.707654Z",
-                "finished_at": "2025-03-07T12:58:58Z",
-                "id": "6a1e591d-8286-48fb-b820-1ccfc459fd17",
+                "created_at": "2026-03-31T16:05:12.375897Z",
+                "finished_at": "2026-03-31T16:06:03Z",
+                "id": "80ce9f09-a7d5-4e0b-b24f-3fdea8a60e9c",
                 "name": "stage-1",
                 "put_on_hold_at": null,
-                "started_at": "2025-03-07T12:58:41Z",
+                "started_at": "2026-03-31T16:05:16Z",
                 "status": "succeeded",
-                "triggered_at": "2025-03-07T12:58:39.941053Z",
+                "triggered_at": "2026-03-31T16:05:12.700658Z",
                 "workflows": [
-                    {
-                        "credit_cost": 0,
-                        "depends_on": null,
-                        "external_id": "ab3168cc-e071-4553-8bbe-a42a25995edc",
-                        "finished_at": "2025-03-07T12:58:43Z",
-                        "id": "cff18596-454b-4770-8c65-8cb5e2604b88",
-                        "name": "placeholder",
-                        "started_at": "2025-03-07T12:58:41Z",
-                        "status": {
-                            "Name": "succeeded",
-                            "StatusLevel": 5
-                        }
-                    },
-                    {
-                        "credit_cost": 0,
-                        "depends_on": null,
-                        "external_id": "d5545537-72e7-4c8a-a793-cc46f4e6e8e8",
-                        "finished_at": "2025-03-07T12:58:58Z",
-                        "id": "5abb5148-f2f4-4cdf-a409-15fc64bfeebd",
-                        "name": "textfile_generator",
-                        "started_at": "2025-03-07T12:58:42Z",
-                        "status": {
-                            "Name": "succeeded",
-                            "StatusLevel": 5
-                        }
+                {
+                    "credit_cost": 0,
+                    "depends_on": null,
+                    "external_id": "ea9e4eb8-5a8b-4bfe-b71d-abdfc9aed306",
+                    "finished_at": "2026-03-31T16:05:19Z",
+                    "id": "9380226f-0450-4a30-a778-037685ff7fa9",
+                    "name": "placeholder",
+                    "started_at": "2026-03-31T16:05:16Z",
+                    "status": {
+                    "Name": "succeeded",
+                    "StatusLevel": 5
                     }
+                },
+                {
+                    "credit_cost": 0,
+                    "depends_on": null,
+                    "external_id": "3fccc821-b32e-483b-a71e-63c7a195aec9",
+                    "finished_at": "2026-03-31T16:06:03Z",
+                    "id": "1bc12fcf-2128-467d-af93-b97842d2aeaa",
+                    "name": "textfile_generator",
+                    "started_at": "2026-03-31T16:05:51Z",
+                    "status": {
+                    "Name": "succeeded",
+                    "StatusLevel": 5
+                    }
+                }
                 ]
             },
             {
-                "created_at": "2025-03-07T12:58:39.707654Z",
-                "finished_at": "2025-03-07T12:59:17Z",
-                "id": "7cf9c65e-33f8-48ab-b272-d52574472855",
+                "created_at": "2026-03-31T16:05:12.375897Z",
+                "finished_at": "2026-03-31T16:07:15Z",
+                "id": "eed0e698-643a-4229-a272-0dce571f317a",
                 "name": "stage-2",
                 "put_on_hold_at": null,
-                "started_at": "2025-03-07T12:59:03Z",
+                "started_at": "2026-03-31T16:06:27Z",
                 "status": "succeeded",
-                "triggered_at": "2025-03-07T12:58:59.278648Z",
+                "triggered_at": "2026-03-31T16:06:03.841656Z",
                 "workflows": [
-                    {
-                        "credit_cost": 0,
-                        "depends_on": null,
-                        "external_id": "c997211e-6c44-4686-94f1-e611cc2fc4db",
-                        "finished_at": "2025-03-07T12:59:17Z",
-                        "id": "49c81512-c7e4-4f5c-a1e2-d74862a9acb3",
-                        "name": "deployer",
-                        "started_at": "2025-03-07T12:59:03Z",
-                        "status": {
-                            "Name": "succeeded",
-                            "StatusLevel": 5
-                        }
-                    },
-                    {
-                        "credit_cost": 0,
-                        "depends_on": null,
-                        "external_id": "f36aed8d-bf67-461a-b1ea-d049c622e8dc",
-                        "finished_at": "2025-03-07T12:59:13Z",
-                        "id": "3b193471-26a4-416e-8740-9e7bcc43669b",
-                        "name": "zip_archive_generator_en",
-                        "started_at": "2025-03-07T12:59:03Z",
-                        "status": {
-                            "Name": "succeeded",
-                            "StatusLevel": 5
-                        }
-                    },
-                    {
-                        "credit_cost": 0,
-                        "depends_on": null,
-                        "external_id": "16f5395f-d631-47f8-ba2e-fc81638115a2",
-                        "finished_at": "2025-03-07T12:59:15Z",
-                        "id": "40924d74-6836-4e51-b0e5-4120ea9b509e",
-                        "name": "tar_archive_generator",
-                        "started_at": "2025-03-07T12:59:03Z",
-                        "status": {
-                            "Name": "succeeded",
-                            "StatusLevel": 5
-                        }
+                {
+                    "credit_cost": 0,
+                    "depends_on": null,
+                    "external_id": "d6652a65-90b3-438f-a048-e16848538a1e",
+                    "finished_at": "2026-03-31T16:07:15Z",
+                    "id": "b032888b-f89a-4de6-ad53-19b40d784bae",
+                    "name": "deployer",
+                    "started_at": "2026-03-31T16:07:00Z",
+                    "status": {
+                    "Name": "succeeded",
+                    "StatusLevel": 5
                     }
+                },
+                {
+                    "credit_cost": 0,
+                    "depends_on": null,
+                    "external_id": "b0fce47e-020e-43ce-bdb5-3aeb9527d6e3",
+                    "finished_at": "2026-03-31T16:07:04Z",
+                    "id": "b019a21d-15e9-4ad2-a125-8c3b15a89327",
+                    "name": "zip_archive_generator_en",
+                    "started_at": "2026-03-31T16:06:51Z",
+                    "status": {
+                    "Name": "succeeded",
+                    "StatusLevel": 5
+                    }
+                },
+                {
+                    "credit_cost": 0,
+                    "depends_on": null,
+                    "external_id": "929b35db-075d-4511-947d-8796b6bfac44",
+                    "finished_at": "2026-03-31T16:06:40Z",
+                    "id": "11da1e81-8bc8-4031-b99b-22b0b2373dc3",
+                    "name": "tar_archive_generator",
+                    "started_at": "2026-03-31T16:06:27Z",
+                    "status": {
+                    "Name": "succeeded",
+                    "StatusLevel": 5
+                    }
+                }
                 ]
             },
             {
-                "created_at": "2025-03-07T12:58:39.707654Z",
-                "finished_at": "2025-03-07T12:59:32Z",
-                "id": "0dd0c4fc-df37-4773-918a-a2271936e532",
+                "created_at": "2026-03-31T16:05:12.375897Z",
+                "finished_at": "2026-03-31T16:07:37Z",
+                "id": "0aac4ad2-6117-414e-b1bc-2b8ea20b6460",
                 "name": "stage-3",
                 "put_on_hold_at": null,
-                "started_at": "2025-03-07T12:59:21Z",
+                "started_at": "2026-03-31T16:07:26Z",
                 "status": "succeeded",
-                "triggered_at": "2025-03-07T12:59:18.367032Z",
+                "triggered_at": "2026-03-31T16:07:15.80554Z",
                 "workflows": [
-                    {
-                        "credit_cost": null,
-                        "depends_on": null,
-                        "external_id": "9ac955b8-d001-4789-9a56-064823538c8a",
-                        "finished_at": "2025-03-07T12:59:32Z",
-                        "id": "a0e5b6dd-8550-423d-b0cc-4626ba38e117",
-                        "name": "zip_archive_generator_jp",
-                        "started_at": "2025-03-07T12:59:21Z",
-                        "status": {
-                            "Name": "succeeded",
-                            "StatusLevel": 5
-                        }
+                {
+                    "credit_cost": null,
+                    "depends_on": null,
+                    "external_id": "25d309b6-ba17-47b0-a166-ff2e2cd3bd96",
+                    "finished_at": "2026-03-31T16:07:37Z",
+                    "id": "4c6415d7-70b3-4c6d-ad5a-28873b635612",
+                    "name": "zip_archive_generator_jp",
+                    "started_at": "2026-03-31T16:07:26Z",
+                    "status": {
+                    "Name": "succeeded",
+                    "StatusLevel": 5
                     }
+                }
                 ]
             }
         ]
@@ -279,7 +279,7 @@ workflows:
                 --data "client_secret=$BITRISE_AUTH_SERVICE_ARTIFACT_PULL_CLIENT_SECRET" \
                 --data "grant_type=urn:ietf:params:oauth:grant-type:uma-ticket" \
                 --data "scope=build_artifact:read build:read app:read" \
-                --data "claim_token=ewogICJidWlsZF9pZHMiOiBbCiAgICAiYWIzMTY4Y2MtZTA3MS00NTUzLThiYmUtYTQyYTI1OTk1ZWRjIiwKICAgICJkNTU0NTUzNy03MmU3LTRjOGEtYTc5My1jYzQ2ZjRlNmU4ZTgiLAogICAgImM5OTcyMTFlLTZjNDQtNDY4Ni05NGYxLWU2MTFjYzJmYzRkYiIsCiAgICAiZjM2YWVkOGQtYmY2Ny00NjFhLWIxZWEtZDA0OWM2MjJlOGRjIiwKICAgICIxNmY1Mzk1Zi1kNjMxLTQ3ZjgtYmEyZS1mYzgxNjM4MTE1YTIiLAogICAgIjlhYzk1NWI4LWQwMDEtNDc4OS05YTU2LTA2NDgyMzUzOGM4YSIKICBdLAogICJwaXBlbGluZV9pZCI6IFsKICAgICI3NmQ3YjBmZS0xYjM0LTQ5OGItOGI2MS1mYTE1YmM3NThmMmMiCiAgXQp9" \
+                --data "claim_token=ewogICJidWlsZF9pZHMiOiBbCiAgICAiZWE5ZTRlYjgtNWE4Yi00YmZlLWI3MWQtYWJkZmM5YWVkMzA2IiwKICAgICIzZmNjYzgyMS1iMzJlLTQ4M2ItYTcxZS02M2M3YTE5NWFlYzkiLAogICAgImQ2NjUyYTY1LTkwYjMtNDM4Zi1hMDQ4LWUxNjg0ODUzOGExZSIsCiAgICAiYjBmY2U0N2UtMDIwZS00M2NlLWJkYjUtM2FlYjk1MjdkNmUzIiwKICAgICI5MjliMzVkYi0wNzVkLTQ1MTEtOTQ3ZC04Nzk2YjZiZmFjNDQiLAogICAgIjI1ZDMwOWI2LWJhMTctNDdiMC1hMTY2LWZmMmUyY2QzYmQ5NiIKICBdLAogICJwaXBlbGluZV9pZCI6IFsKICAgICIyYWVlMTAxMy01NmZiLTQ2YjgtYTI4Ny01M2YwZjMxNmM0ZjUiCiAgXQp9" \
                 --data "claim_token_format=urn:ietf:params:oauth:token-type:jwt" \
                 --data "audience=bitrise-api")
 
