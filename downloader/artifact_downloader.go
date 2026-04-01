@@ -332,13 +332,15 @@ func downloadWithRetry(ctx context.Context, httpClient *retryablehttp.Client, ur
 }
 
 func download(ctx context.Context, httpClient *retryablehttp.Client, url string, dest string, logger log.Logger) error {
-	httpClient.HTTPClient.Transport.(*http.Transport).ForceAttemptHTTP2 = false
-	httpClient.HTTPClient.Transport.(*http.Transport).DialContext = (&net.Dialer{
-		Timeout:   30 * time.Second,
-		KeepAlive: 30 * time.Second,
-		DualStack: false,
-	}).DialContext
-	httpClient.HTTPClient.Transport.(*http.Transport).ResponseHeaderTimeout = 30 * time.Second
+	if t, ok := httpClient.HTTPClient.Transport.(*http.Transport); ok {
+		t.ForceAttemptHTTP2 = false
+		t.DialContext = (&net.Dialer{
+			Timeout:   30 * time.Second,
+			KeepAlive: 30 * time.Second,
+			DualStack: false,
+		}).DialContext
+		t.ResponseHeaderTimeout = 30 * time.Second
+	}
 
 	downloader := got.New()
 	downloader.Client = httpClient.StandardClient()
