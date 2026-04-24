@@ -122,7 +122,6 @@ app:
             }
         ]
   - BITRISE_APP_SLUG: b520099804d7e71a
-  - BITRISE_AUTH_SERVICE_ARTIFACT_PULL_CLIENT_SECRET: $BITRISE_AUTH_SERVICE_ARTIFACT_PULL_CLIENT_SECRET
 
 workflows:
   test_download_tar_archive:
@@ -249,44 +248,6 @@ workflows:
 
   _setup:
     steps:
-    - script:
-        title: Get access token
-        inputs:
-        - content: |-
-            #!/bin/env bash
-            set -ex
-
-            # The `claim_token` below is a base64 encoded struct which describes to which builds and pipelines need to be accessed.
-            # It has the following format:
-            # {
-            #   "build_ids": [
-            #     "build-id-1",
-            #     "build-id-2",
-            #     "build-id-3",
-            #     "build-id-4",
-            #     "build-id-5"
-            #   ],
-            #   "pipeline_ids": [
-            #     "pipeline-id-1"
-            #   ]
-            # }
-            #
-            # This needs to be assembled and base64 encoded manually. Use the above BITRISEIO_FINISHED_STAGES json value
-            # and use all of the external_id values as build_ids. The pipeline identifier can be copied from the website.
-
-            json_response=$(curl --fail -X POST https://auth.services.bitrise.io/auth/realms/bitrise-services/protocol/openid-connect/token -k \
-                --data "client_id=artifact-pull" \
-                --data "client_secret=$BITRISE_AUTH_SERVICE_ARTIFACT_PULL_CLIENT_SECRET" \
-                --data "grant_type=urn:ietf:params:oauth:grant-type:uma-ticket" \
-                --data "scope=build_artifact:read build:read app:read" \
-                --data "claim_token=ewogICJidWlsZF9pZHMiOiBbCiAgICAiZWE5ZTRlYjgtNWE4Yi00YmZlLWI3MWQtYWJkZmM5YWVkMzA2IiwKICAgICIzZmNjYzgyMS1iMzJlLTQ4M2ItYTcxZS02M2M3YTE5NWFlYzkiLAogICAgImQ2NjUyYTY1LTkwYjMtNDM4Zi1hMDQ4LWUxNjg0ODUzOGExZSIsCiAgICAiYjBmY2U0N2UtMDIwZS00M2NlLWJkYjUtM2FlYjk1MjdkNmUzIiwKICAgICI5MjliMzVkYi0wNzVkLTQ1MTEtOTQ3ZC04Nzk2YjZiZmFjNDQiLAogICAgIjI1ZDMwOWI2LWJhMTctNDdiMC1hMTY2LWZmMmUyY2QzYmQ5NiIKICBdLAogICJwaXBlbGluZV9pZCI6IFsKICAgICIyYWVlMTAxMy01NmZiLTQ2YjgtYTI4Ny01M2YwZjMxNmM0ZjUiCiAgXQp9" \
-                --data "claim_token_format=urn:ietf:params:oauth:token-type:jwt" \
-                --data "audience=bitrise-api")
-
-            auth_token=$(echo $json_response | jq -r .access_token)
-
-            envman add --key BITRISEIO_ARTIFACT_PULL_TOKEN --value $auth_token
-
     - script:
         title: Clean _tmp folder
         inputs:
