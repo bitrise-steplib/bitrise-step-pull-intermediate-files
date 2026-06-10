@@ -1,6 +1,7 @@
 package downloader
 
 import (
+	"crypto/md5"
 	"fmt"
 	"net/http"
 	"net/http/httptest"
@@ -32,8 +33,13 @@ func getDownloadDir(dirName string) (string, error) {
 }
 
 func Test_DownloadAndSaveArtifacts(t *testing.T) {
+	const dummyData = "dummy data"
+	dummyMD5 := fmt.Sprintf("%x", md5.Sum([]byte(dummyData)))
 	svr := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		_, _ = fmt.Fprint(w, "dummy data")
+		// Single-part uploads expose the object MD5 as the ETag, which lets the
+		// downloader validate the fetched file.
+		w.Header().Set("ETag", `"`+dummyMD5+`"`)
+		_, _ = fmt.Fprint(w, dummyData)
 	}))
 	defer svr.Close()
 
@@ -49,8 +55,11 @@ func Test_DownloadAndSaveArtifacts(t *testing.T) {
 			DownloadPath: targetDir + fmt.Sprintf("/%d.txt", i),
 			DownloadURL:  downloadURL,
 			DownloadDetails: TransferDetails{
-				Size:     10,
-				Hostname: "127.0.0.1",
+				Size:           10,
+				Hostname:       "127.0.0.1",
+				MD5:            dummyMD5,
+				ETag:           dummyMD5,
+				ChecksumStatus: string(checksumSingleOK),
 			},
 		})
 	}
