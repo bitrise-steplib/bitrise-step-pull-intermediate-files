@@ -14,6 +14,7 @@ import (
 	"path/filepath"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/bitrise-steplib/bitrise-step-pull-intermediate-files/api"
@@ -31,7 +32,6 @@ import (
 const (
 	filePermission               = 0o655
 	maxConcurrentDownloadThreads = 10
-	etagFetchTimeout             = 30 * time.Second
 )
 
 // checksumStatus describes the outcome of validating a downloaded file against its remote ETag.
@@ -154,11 +154,18 @@ func (ad *ConcurrentArtifactDownloader) download(jobs <-chan downloadJob, result
 func (ad *ConcurrentArtifactDownloader) downloadFile(targetDir, fileName, downloadURL string) (string, TransferDetails, error) {
 	fileFullPath := filepath.Join(targetDir, fileName)
 
+	// The download responses already carry the object's ETag, so we capture it here and reuse it
+	// for checksum validation instead of issuing a separate request.
+	recorder := &etagRecorder{}
+
 	ctx, cancel := context.WithTimeout(context.Background(), ad.Timeout)
 
 	start := time.Now()
 
-	err := downloadWithRetry(ctx, ad.createClient(), downloadURL, fileFullPath, ad.Logger)
+	client := ad.createClient()
+	recorder.attachTo(client)
+
+	err := downloadWithRetry(ctx, client, downloadURL, fileFullPath, ad.Logger)
 	if err != nil {
 		// fallback to single threaded download - the error with the 416 status code seems to happen for 0 size files with got
 		errorMessage := err.Error()
@@ -171,7 +178,9 @@ func (ad *ConcurrentArtifactDownloader) downloadFile(targetDir, fileName, downlo
 
 			start = time.Now()
 
-			downloader := filedownloader.NewWithContext(ctx, retryhttp.NewClient(ad.Logger).StandardClient())
+			fallbackClient := retryhttp.NewClient(ad.Logger)
+			recorder.attachTo(fallbackClient)
+			downloader := filedownloader.NewWithContext(ctx, fallbackClient.StandardClient())
 			err = downloader.Get(fileFullPath, downloadURL)
 		}
 
@@ -194,9 +203,10 @@ func (ad *ConcurrentArtifactDownloader) downloadFile(targetDir, fileName, downlo
 		Size:     fileSize(fileFullPath),
 		Duration: time.Since(start),
 		Hostname: extractHost(downloadURL),
+		ETag:     recorder.value(),
 	}
 
-	ad.verifyAndLogChecksum(fileFullPath, downloadURL, &details)
+	ad.verifyAndLogChecksum(fileFullPath, &details)
 
 	return fileFullPath, details, nil
 }
@@ -319,9 +329,9 @@ func (ad *ConcurrentArtifactDownloader) createClient() *retryablehttp.Client {
 	return client
 }
 
-// verifyAndLogChecksum computes the MD5 of the downloaded file, fetches the remote ETag and
-// validates one against the other. It is purely diagnostic: failures are logged, never returned.
-func (ad *ConcurrentArtifactDownloader) verifyAndLogChecksum(path, downloadURL string, details *TransferDetails) {
+// verifyAndLogChecksum computes the MD5 of the downloaded file and validates it against the ETag
+// captured from the download response. It is purely diagnostic: failures are logged, never returned.
+func (ad *ConcurrentArtifactDownloader) verifyAndLogChecksum(path string, details *TransferDetails) {
 	md5sum, err := fileMD5(path)
 	if err != nil {
 		ad.Logger.Warnf("Failed to compute MD5 of %s: %s", filepath.Base(path), err)
@@ -329,24 +339,25 @@ func (ad *ConcurrentArtifactDownloader) verifyAndLogChecksum(path, downloadURL s
 	}
 	details.MD5 = md5sum
 
-	etag, err := ad.fetchETag(downloadURL)
-	if err != nil {
+	if details.ETag == "" {
 		details.ChecksumStatus = string(checksumETagUnavailable)
-		ad.Logger.Warnf("Could not fetch ETag for %s (md5=%s): %s", filepath.Base(path), md5sum, err)
+		// Some responses (e.g. empty objects) carry no ETag; only flag it for non-empty files.
+		if details.Size > 0 {
+			ad.Logger.Warnf("No ETag in download response for %s (md5=%s)", filepath.Base(path), md5sum)
+		}
 		return
 	}
-	details.ETag = etag
 
-	status := ad.validateChecksum(path, md5sum, etag)
+	status := ad.validateChecksum(path, md5sum, details.ETag)
 	details.ChecksumStatus = string(status)
 
 	switch status {
 	case checksumSingleMismatch:
-		ad.Logger.Warnf("Checksum mismatch for %s: md5=%s does not match single-part ETag=%s", filepath.Base(path), md5sum, etag)
+		ad.Logger.Warnf("Checksum mismatch for %s: md5=%s does not match single-part ETag=%s", filepath.Base(path), md5sum, details.ETag)
 	case checksumMultipartUnknown:
-		ad.Logger.Warnf("Could not verify multipart ETag for %s: md5=%s, etag=%s (upload part size unknown)", filepath.Base(path), md5sum, etag)
+		ad.Logger.Warnf("Could not verify multipart ETag for %s: md5=%s, etag=%s (upload part size unknown)", filepath.Base(path), md5sum, details.ETag)
 	default:
-		ad.Logger.Printf("Checksum for %s: md5=%s, etag=%s, validation=%s", filepath.Base(path), md5sum, etag, status)
+		ad.Logger.Printf("Checksum for %s: md5=%s, etag=%s, validation=%s", filepath.Base(path), md5sum, details.ETag, status)
 	}
 }
 
@@ -371,34 +382,36 @@ func (ad *ConcurrentArtifactDownloader) validateChecksum(path, md5sum, etag stri
 	return checksumSingleMismatch
 }
 
-// fetchETag reads the remote object's ETag via a single-byte ranged GET. S3/R2 return the full
-// object's ETag on a 206 response, and Range is not a signed header so it works with the
-// presigned download URL.
-func (ad *ConcurrentArtifactDownloader) fetchETag(downloadURL string) (string, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), etagFetchTimeout)
-	defer cancel()
+// etagRecorder captures the ETag header from download responses, so checksum validation can reuse
+// it instead of issuing a separate request. S3/R2 return the full object's ETag on every response,
+// including the ranged probes and chunk reads got performs. got downloads chunks concurrently, so
+// access is guarded by a mutex.
+type etagRecorder struct {
+	mu   sync.Mutex
+	etag string
+}
 
-	req, err := retryablehttp.NewRequestWithContext(ctx, http.MethodGet, downloadURL, nil)
-	if err != nil {
-		return "", err
+// attachTo installs the recorder as the client's response hook. It overwrites any existing
+// ResponseLogHook, which is unused by the clients we build here.
+func (r *etagRecorder) attachTo(client *retryablehttp.Client) {
+	client.ResponseLogHook = func(_ retryablehttp.Logger, resp *http.Response) {
+		if resp == nil {
+			return
+		}
+		etag := strings.Trim(resp.Header.Get("ETag"), `"`)
+		if etag == "" {
+			return
+		}
+		r.mu.Lock()
+		r.etag = etag
+		r.mu.Unlock()
 	}
-	req.Header.Set("Range", "bytes=0-0")
+}
 
-	resp, err := ad.createClient().Do(req)
-	if err != nil {
-		return "", err
-	}
-	defer func() {
-		_, _ = io.Copy(io.Discard, resp.Body)
-		_ = resp.Body.Close()
-	}()
-
-	etag := strings.Trim(resp.Header.Get("ETag"), `"`)
-	if etag == "" {
-		return "", fmt.Errorf("response has no ETag header")
-	}
-
-	return etag, nil
+func (r *etagRecorder) value() string {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	return r.etag
 }
 
 // fileMD5 returns the hex-encoded MD5 of the whole file.
