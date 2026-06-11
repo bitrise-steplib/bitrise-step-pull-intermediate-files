@@ -20,22 +20,30 @@ workflows:
 
   e2e:
     steps:
-    # TODO(SW-3004): e2e is temporarily disabled. The `_setup` step in e2e/bitrise.yml mints an
-    # artifact-pull token via the retired Keycloak Auth Service endpoint
-    # (auth.services.bitrise.io/.../openid-connect/token), which now returns 404 after the
-    # decommission in favor of the Token Issuer Service (TIS). TIS does not expose public token
-    # creation, so the e2e harness needs a new way to obtain a token. Re-enable once the
-    # replacement (staging TIS token endpoint + credential) is confirmed.
+    # TODO(SW-3004): e2e is disabled. The `_setup` step in e2e/bitrise.yml mints a production
+    # artifact-pull JWT via the retired Keycloak Auth Service endpoint, which now returns 404
+    # after that service was decommissioned. This was the only use-case where a step needed a
+    # production token generated from a build.
+    #
+    # We are NOT migrating the current self-minting approach: exposing production token creation
+    # to builds for this single use-case is not desirable. Instead, the agreed plan is to rebuild
+    # the e2e as a real pipeline-based CI setup. In a pipeline, earlier stages run the generator
+    # workflows (textfile_generator, tar_archive_generator, zip_archive_generator_en/jp, ...) and a
+    # final stage runs the four pull-and-verify workflows; the platform then injects
+    # BITRISEIO_FINISHED_STAGES and the artifact-pull token automatically on every run, so no manual
+    # token fetch is needed. The step itself needs no changes, only the e2e config is restructured.
+    # Because the shared Step CI scaffolding doesn't support pipeline configs, this will live as a
+    # separate Bitrise project alongside it, as an additional check rather than a replacement.
     # - git::https://github.com/bitrise-steplib/steps-check.git:
     #     inputs:
     #     - workflow: e2e
     - script:
-        title: e2e temporarily disabled (SW-3004)
+        title: e2e disabled (SW-3004)
         inputs:
         - content: |-
             #!/bin/env bash
-            echo "e2e tests are temporarily disabled (SW-3004): the artifact-pull token endpoint was retired."
-            echo "See the TODO in bitrise.yml and e2e/bitrise.yml _setup."
+            echo "e2e tests are disabled (SW-3004): the production artifact-pull token endpoint was retired."
+            echo "These tests will be replaced by a separate pipeline-based Bitrise project; see the TODO in bitrise.yml."
 
   generate_readme:
     steps:
