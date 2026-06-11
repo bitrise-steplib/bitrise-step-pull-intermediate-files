@@ -329,6 +329,20 @@ func (ad *ConcurrentArtifactDownloader) createClient() *retryablehttp.Client {
 
 		return resp, err
 	}
+
+	// Tune the transport once, here, rather than on every download() call: mutating the shared
+	// transport while a previous retry attempt's in-flight requests are still reading it is a data
+	// race.
+	if t, ok := client.HTTPClient.Transport.(*http.Transport); ok {
+		t.ForceAttemptHTTP2 = false
+		t.DialContext = (&net.Dialer{
+			Timeout:   30 * time.Second,
+			KeepAlive: 30 * time.Second,
+			DualStack: false,
+		}).DialContext
+		t.ResponseHeaderTimeout = 30 * time.Second
+	}
+
 	return client
 }
 
@@ -517,16 +531,6 @@ func downloadWithRetry(ctx context.Context, httpClient *retryablehttp.Client, ur
 }
 
 func download(ctx context.Context, httpClient *retryablehttp.Client, url string, dest string, logger log.Logger) error {
-	if t, ok := httpClient.HTTPClient.Transport.(*http.Transport); ok {
-		t.ForceAttemptHTTP2 = false
-		t.DialContext = (&net.Dialer{
-			Timeout:   30 * time.Second,
-			KeepAlive: 30 * time.Second,
-			DualStack: false,
-		}).DialContext
-		t.ResponseHeaderTimeout = 30 * time.Second
-	}
-
 	downloader := got.New()
 	downloader.Client = httpClient.StandardClient()
 
