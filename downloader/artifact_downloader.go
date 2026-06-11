@@ -12,7 +12,6 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
-	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -32,6 +31,10 @@ import (
 const (
 	filePermission               = 0o655
 	maxConcurrentDownloadThreads = 10
+	// multipartTargetPartSize and multipartMaxParts mirror the backend's multipart upload settings
+	// (bitrise-website BFF), so the upload part size can be recomputed deterministically.
+	multipartTargetPartSize = 100 * (1 << 20) // 100 MiB
+	multipartMaxParts       = 10_000          // provider hard cap on parts per upload
 )
 
 // checksumStatus describes the outcome of validating a downloaded file against its remote ETag.
@@ -362,15 +365,20 @@ func (ad *ConcurrentArtifactDownloader) verifyAndLogChecksum(path string, detail
 }
 
 // validateChecksum compares the file's MD5 against the remote ETag. An ETag of the form
-// "<hash>-<N>" denotes a multipart upload, whose ETag is the MD5 of the concatenated binary
-// MD5 digests of each part, suffixed with the part count; otherwise it is a plain MD5.
+// "<hash>-<N>" denotes a multipart upload, whose ETag is the MD5 of the concatenated binary MD5
+// digests of each part, suffixed with the part count; otherwise it is a plain MD5. The upload part
+// size is recomputed deterministically from the file size (see multipartPartSize).
 func (ad *ConcurrentArtifactDownloader) validateChecksum(path, md5sum, etag string) checksumStatus {
-	if dash := strings.LastIndex(etag, "-"); dash != -1 {
-		parts, err := strconv.Atoi(etag[dash+1:])
-		if err != nil || parts < 1 {
+	if strings.Contains(etag, "-") {
+		info, err := os.Stat(path)
+		if err != nil {
 			return checksumMultipartUnknown
 		}
-		if matchMultipartETag(path, etag, parts) {
+		expected, err := multipartETag(path, multipartPartSize(info.Size()))
+		if err != nil {
+			return checksumMultipartUnknown
+		}
+		if strings.EqualFold(expected, etag) {
 			return checksumMultipartOK
 		}
 		return checksumMultipartUnknown
@@ -430,60 +438,17 @@ func fileMD5(path string) (string, error) {
 	return fmt.Sprintf("%x", h.Sum(nil)), nil
 }
 
-// matchMultipartETag reports whether the file reproduces the given multipart ETag for any
-// plausible upload part size. The part size is unknown at download time, so candidates are
-// derived from common values that yield exactly the expected part count.
-func matchMultipartETag(path, expected string, parts int) bool {
-	info, err := os.Stat(path)
-	if err != nil {
-		return false
+// multipartPartSize recomputes the upload part size the backend assigned to a file, mirroring the
+// bitrise-website formula (BFF build_controller): a 100 MiB target, raised only when necessary to
+// keep the part count within the provider's 10,000-part cap. The provider's 5 MiB minimum is
+// always subsumed by the 100 MiB target, so it is omitted. This makes multipart ETag validation
+// deterministic: the part size is derived, not guessed.
+func multipartPartSize(fileSize int64) int64 {
+	partSize := int64(multipartTargetPartSize)
+	if capped := (fileSize + multipartMaxParts - 1) / multipartMaxParts; capped > partSize {
+		partSize = capped
 	}
-
-	for _, partSize := range candidatePartSizes(info.Size(), parts) {
-		etag, err := multipartETag(path, partSize)
-		if err != nil {
-			continue
-		}
-		if etag == expected {
-			return true
-		}
-	}
-
-	return false
-}
-
-// candidatePartSizes returns plausible upload part sizes that would split a file of fileSize
-// bytes into exactly the given number of parts. The cheap ceil(fileSize/partSize)==parts filter
-// prunes the common-value list (in both MiB and MB units) down to the few that could match,
-// before any file is read.
-func candidatePartSizes(fileSize int64, parts int) []int64 {
-	if parts < 1 || fileSize < 1 {
-		return nil
-	}
-	// A single-part multipart upload covers the whole file in one part.
-	if parts == 1 {
-		return []int64{fileSize}
-	}
-
-	baseMB := []int64{5, 8, 10, 15, 16, 25, 32, 50, 64, 100, 128, 256, 512, 1024}
-	units := []int64{1 << 20, 1_000_000} // MiB and MB.
-
-	seen := map[int64]bool{}
-	var candidates []int64
-	for _, base := range baseMB {
-		for _, unit := range units {
-			partSize := base * unit
-			if partSize < 1 || seen[partSize] {
-				continue
-			}
-			seen[partSize] = true
-			if (fileSize+partSize-1)/partSize == int64(parts) {
-				candidates = append(candidates, partSize)
-			}
-		}
-	}
-
-	return candidates
+	return partSize
 }
 
 // multipartETag computes the S3/R2 multipart ETag of a file for a given part size: the MD5 of

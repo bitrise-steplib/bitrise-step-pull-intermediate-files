@@ -77,42 +77,43 @@ func Test_validateChecksum_singlePart(t *testing.T) {
 	assert.Equal(t, checksumSingleMismatch, ad.validateChecksum(path, md5sum, "deadbeefdeadbeefdeadbeefdeadbeef"))
 }
 
-func Test_validateChecksum_multipartInferred(t *testing.T) {
+func Test_validateChecksum_multipartDeterministic(t *testing.T) {
 	ad := &ConcurrentArtifactDownloader{}
-	size := 6 * 1024 * 1024 // 6 MiB -> 2 parts at a 5 MiB part size
-	path := writeTempFile(t, bytes.Repeat([]byte("a"), size))
+	size := int64(6 * 1024 * 1024) // 6 MiB -> 1 part at the 100 MiB deterministic part size
+	path := writeTempFile(t, bytes.Repeat([]byte("a"), int(size)))
 	md5sum, err := fileMD5(path)
 	assert.NoError(t, err)
 
-	expected, err := multipartETag(path, 5*1024*1024)
+	// The expected ETag is recomputed with the same deterministic part size validateChecksum uses.
+	expected, err := multipartETag(path, multipartPartSize(size))
 	assert.NoError(t, err)
 
 	assert.Equal(t, checksumMultipartOK, ad.validateChecksum(path, md5sum, expected))
 	assert.Equal(t, checksumMultipartUnknown, ad.validateChecksum(path, md5sum, "0123456789abcdef0123456789abcdef-2"))
 }
 
-func Test_validateChecksum_multipartUnverifiableForUnusualPartSize(t *testing.T) {
+func Test_validateChecksum_multipartMismatch(t *testing.T) {
 	ad := &ConcurrentArtifactDownloader{}
 	path := writeTempFile(t, []byte("small file"))
 	md5sum, err := fileMD5(path)
 	assert.NoError(t, err)
 
-	// No plausible common part size splits a 10-byte file into 3 parts.
+	// An ETag the deterministic recomputation can't reproduce is reported as unverified — it may be
+	// a non-MD5 ETag (SSE-KMS/SSE-C), not necessarily corruption.
 	assert.Equal(t, checksumMultipartUnknown, ad.validateChecksum(path, md5sum, "abc-3"))
-	// Malformed multipart suffix.
+	// Any "-"-suffixed value is treated as multipart; a malformed one simply won't match.
 	assert.Equal(t, checksumMultipartUnknown, ad.validateChecksum(path, md5sum, "abc-notanumber"))
 }
 
-func Test_candidatePartSizes(t *testing.T) {
-	// Single-part multipart upload covers the whole file in one part.
-	assert.Equal(t, []int64{1234}, candidatePartSizes(1234, 1))
+func Test_multipartPartSize(t *testing.T) {
+	const target = int64(100 * (1 << 20)) // 100 MiB
 
-	// 6 MiB into 2 parts: both 5 MiB and 5 MB qualify.
-	got := candidatePartSizes(6*1024*1024, 2)
-	assert.Contains(t, got, int64(5*1024*1024))
-	assert.Contains(t, got, int64(5_000_000))
+	// Below ~976 GiB the 100 MiB target always wins.
+	assert.Equal(t, target, multipartPartSize(1))
+	assert.Equal(t, target, multipartPartSize(6*1024*1024))
+	assert.Equal(t, target, multipartPartSize(50*target)) // 50 parts, still 100 MiB each
 
-	// Degenerate inputs.
-	assert.Nil(t, candidatePartSizes(0, 2))
-	assert.Nil(t, candidatePartSizes(100, 0))
+	// Past the 10,000-part cap the part size grows to ceil(size / 10_000).
+	huge := target*10_000 + 1
+	assert.Equal(t, (huge+9_999)/10_000, multipartPartSize(huge))
 }
