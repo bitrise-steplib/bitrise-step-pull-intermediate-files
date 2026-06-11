@@ -31,8 +31,8 @@ import (
 const (
 	filePermission               = 0o655
 	maxConcurrentDownloadThreads = 10
-	// multipartTargetPartSize and multipartMaxParts mirror the backend's multipart upload settings
-	// (bitrise-website BFF), so the upload part size can be recomputed deterministically.
+	// multipartTargetPartSize and multipartMaxParts mirror the storage backend's multipart upload
+	// settings, so the upload part size can be recomputed deterministically.
 	multipartTargetPartSize = 100 * (1 << 20) // 100 MiB
 	multipartMaxParts       = 10_000          // provider hard cap on parts per upload
 )
@@ -41,11 +41,11 @@ const (
 type checksumStatus string
 
 const (
-	checksumSingleOK         checksumStatus = "single:ok"
-	checksumSingleMismatch   checksumStatus = "single:mismatch"
-	checksumMultipartOK      checksumStatus = "multipart:ok"
-	checksumMultipartUnknown checksumStatus = "multipart:unverified"
-	checksumETagUnavailable  checksumStatus = "etag:unavailable"
+	checksumSingleOK          checksumStatus = "single:ok"
+	checksumSingleMismatch    checksumStatus = "single:mismatch"
+	checksumMultipartOK       checksumStatus = "multipart:ok"
+	checksumMultipartMismatch checksumStatus = "multipart:mismatch"
+	checksumETagUnavailable   checksumStatus = "etag:unavailable"
 )
 
 type ArtifactDownloadResult struct {
@@ -157,8 +157,9 @@ func (ad *ConcurrentArtifactDownloader) download(jobs <-chan downloadJob, result
 func (ad *ConcurrentArtifactDownloader) downloadFile(targetDir, fileName, downloadURL string) (string, TransferDetails, error) {
 	fileFullPath := filepath.Join(targetDir, fileName)
 
-	// The download responses already carry the object's ETag, so we capture it here and reuse it
-	// for checksum validation instead of issuing a separate request.
+	// Reuse the object's ETag from the download responses for checksum validation, instead of
+	// issuing a separate request. This relies on a response carrying the ETag; if none does, the
+	// ETag stays empty and checksum validation is skipped.
 	recorder := &etagRecorder{}
 
 	ctx, cancel := context.WithTimeout(context.Background(), ad.Timeout)
@@ -335,9 +336,16 @@ func (ad *ConcurrentArtifactDownloader) createClient() *retryablehttp.Client {
 // verifyAndLogChecksum computes the MD5 of the downloaded file and validates it against the ETag
 // captured from the download response. It is purely diagnostic: failures are logged, never returned.
 func (ad *ConcurrentArtifactDownloader) verifyAndLogChecksum(path string, details *TransferDetails) {
-	md5sum, err := fileMD5(path)
+	// Compute the whole-file MD5 and (only for a multipart ETag) the multipart ETag in a single
+	// pass over the file, so a large download is not re-read for validation.
+	var partSize int64
+	if strings.Contains(details.ETag, "-") {
+		partSize = multipartPartSize(details.Size)
+	}
+
+	md5sum, multipartETag, err := fileChecksums(path, partSize)
 	if err != nil {
-		ad.Logger.Warnf("Failed to compute MD5 of %s: %s", filepath.Base(path), err)
+		ad.Logger.Warnf("Failed to compute checksum of %s: %s", filepath.Base(path), err)
 		return
 	}
 	details.MD5 = md5sum
@@ -351,37 +359,28 @@ func (ad *ConcurrentArtifactDownloader) verifyAndLogChecksum(path string, detail
 		return
 	}
 
-	status := ad.validateChecksum(path, md5sum, details.ETag)
+	status := ad.validateChecksum(md5sum, multipartETag, details.ETag)
 	details.ChecksumStatus = string(status)
 
 	switch status {
 	case checksumSingleMismatch:
 		ad.Logger.Warnf("Checksum mismatch for %s: md5=%s does not match single-part ETag=%s", filepath.Base(path), md5sum, details.ETag)
-	case checksumMultipartUnknown:
-		ad.Logger.Warnf("Could not verify multipart ETag for %s: md5=%s, etag=%s (upload part size unknown)", filepath.Base(path), md5sum, details.ETag)
+	case checksumMultipartMismatch:
+		ad.Logger.Warnf("Multipart ETag mismatch for %s: recomputed ETag does not match etag=%s (object may use a non-MD5 ETag or a different upload part size)", filepath.Base(path), details.ETag)
 	default:
 		ad.Logger.Printf("Checksum for %s: md5=%s, etag=%s, validation=%s", filepath.Base(path), md5sum, details.ETag, status)
 	}
 }
 
-// validateChecksum compares the file's MD5 against the remote ETag. An ETag of the form
-// "<hash>-<N>" denotes a multipart upload, whose ETag is the MD5 of the concatenated binary MD5
-// digests of each part, suffixed with the part count; otherwise it is a plain MD5. The upload part
-// size is recomputed deterministically from the file size (see multipartPartSize).
-func (ad *ConcurrentArtifactDownloader) validateChecksum(path, md5sum, etag string) checksumStatus {
+// validateChecksum compares the precomputed local checksums against the remote ETag: an ETag of the
+// form "<hash>-<N>" is multipart and compared against multipartETag, otherwise it is a plain MD5
+// compared against md5sum.
+func (ad *ConcurrentArtifactDownloader) validateChecksum(md5sum, multipartETag, etag string) checksumStatus {
 	if strings.Contains(etag, "-") {
-		info, err := os.Stat(path)
-		if err != nil {
-			return checksumMultipartUnknown
-		}
-		expected, err := multipartETag(path, multipartPartSize(info.Size()))
-		if err != nil {
-			return checksumMultipartUnknown
-		}
-		if strings.EqualFold(expected, etag) {
+		if strings.EqualFold(multipartETag, etag) {
 			return checksumMultipartOK
 		}
-		return checksumMultipartUnknown
+		return checksumMultipartMismatch
 	}
 
 	if strings.EqualFold(md5sum, etag) {
@@ -390,17 +389,14 @@ func (ad *ConcurrentArtifactDownloader) validateChecksum(path, md5sum, etag stri
 	return checksumSingleMismatch
 }
 
-// etagRecorder captures the ETag header from download responses, so checksum validation can reuse
-// it instead of issuing a separate request. S3/R2 return the full object's ETag on every response,
-// including the ranged probes and chunk reads got performs. got downloads chunks concurrently, so
-// access is guarded by a mutex.
+// etagRecorder captures the object's ETag from download responses, so checksum validation can
+// reuse it instead of issuing a separate request. The mutex guards against concurrent responses.
 type etagRecorder struct {
 	mu   sync.Mutex
 	etag string
 }
 
-// attachTo installs the recorder as the client's response hook. It overwrites any existing
-// ResponseLogHook, which is unused by the clients we build here.
+// attachTo installs the recorder as the client's response hook.
 func (r *etagRecorder) attachTo(client *retryablehttp.Client) {
 	client.ResponseLogHook = func(_ retryablehttp.Logger, resp *http.Response) {
 		if resp == nil {
@@ -422,27 +418,8 @@ func (r *etagRecorder) value() string {
 	return r.etag
 }
 
-// fileMD5 returns the hex-encoded MD5 of the whole file.
-func fileMD5(path string) (string, error) {
-	f, err := os.Open(path)
-	if err != nil {
-		return "", err
-	}
-	defer f.Close()
-
-	h := md5.New()
-	if _, err := io.Copy(h, f); err != nil {
-		return "", err
-	}
-
-	return fmt.Sprintf("%x", h.Sum(nil)), nil
-}
-
-// multipartPartSize recomputes the upload part size the backend assigned to a file, mirroring the
-// bitrise-website formula (BFF build_controller): a 100 MiB target, raised only when necessary to
-// keep the part count within the provider's 10,000-part cap. The provider's 5 MiB minimum is
-// always subsumed by the 100 MiB target, so it is omitted. This makes multipart ETag validation
-// deterministic: the part size is derived, not guessed.
+// multipartPartSize recomputes the upload part size deterministically, mirroring the storage
+// backend: a 100 MiB target, raised only enough to keep the part count within the 10,000-part cap.
 func multipartPartSize(fileSize int64) int64 {
 	partSize := int64(multipartTargetPartSize)
 	if capped := (fileSize + multipartMaxParts - 1) / multipartMaxParts; capped > partSize {
@@ -451,34 +428,49 @@ func multipartPartSize(fileSize int64) int64 {
 	return partSize
 }
 
-// multipartETag computes the S3/R2 multipart ETag of a file for a given part size: the MD5 of
-// the concatenated binary MD5 digests of each part, hex-encoded and suffixed with the part count.
-func multipartETag(path string, partSize int64) (string, error) {
+// fileChecksums reads the file once and returns the hex-encoded MD5 of the whole file and, when
+// partSize > 0, the S3/R2 multipart ETag for that part size: the MD5 of the concatenated binary MD5
+// digests of each part, hex-encoded and suffixed with the part count. Computing both in a single
+// pass avoids re-reading large files during checksum validation.
+func fileChecksums(path string, partSize int64) (md5hex, multipartETag string, err error) {
 	f, err := os.Open(path)
 	if err != nil {
-		return "", err
+		return "", "", err
 	}
 	defer f.Close()
 
-	var digests []byte
-	parts := 0
-	for {
-		partHash := md5.New()
-		n, err := io.CopyN(partHash, f, partSize)
-		if n > 0 {
-			digests = append(digests, partHash.Sum(nil)...)
-			parts++
+	fullHash := md5.New()
+
+	if partSize <= 0 {
+		if _, err := io.Copy(fullHash, f); err != nil {
+			return "", "", err
 		}
-		if err == io.EOF {
-			break
+		return fmt.Sprintf("%x", fullHash.Sum(nil)), "", nil
+	}
+
+	// Hash each part separately while feeding every byte to the whole-file hash. io.CopyN reads one
+	// part per iteration; a short read means EOF. Parts are counted from the bytes actually read.
+	partHash := md5.New()
+	combined := io.MultiWriter(fullHash, partHash)
+	var partDigests []byte
+	partCount := 0
+	for {
+		partHash.Reset()
+		n, err := io.CopyN(combined, f, partSize)
+		if n > 0 {
+			partDigests = append(partDigests, partHash.Sum(nil)...)
+			partCount++
 		}
 		if err != nil {
-			return "", err
+			if errors.Is(err, io.EOF) {
+				break
+			}
+			return "", "", err
 		}
 	}
 
-	sum := md5.Sum(digests)
-	return fmt.Sprintf("%x-%d", sum, parts), nil
+	sum := md5.Sum(partDigests)
+	return fmt.Sprintf("%x", fullHash.Sum(nil)), fmt.Sprintf("%x-%d", sum, partCount), nil
 }
 
 func extractHost(downloadURL string) string {
