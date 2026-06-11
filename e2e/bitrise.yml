@@ -256,6 +256,10 @@ workflows:
             #!/bin/env bash
             set -ex
 
+            # TODO(SW-3004): the endpoint below (Keycloak Auth Service) was retired and now returns 404.
+            # The whole e2e suite is disabled in bitrise.yml until this token fetch is migrated to the
+            # Token Issuer Service (TIS). See the TODO in bitrise.yml for details.
+            #
             # The `claim_token` below is a base64 encoded struct which describes to which builds and pipelines need to be accessed.
             # It has the following format:
             # {

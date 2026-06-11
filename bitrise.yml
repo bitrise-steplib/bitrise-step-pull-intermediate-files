@@ -20,9 +20,22 @@ workflows:
 
   e2e:
     steps:
-    - git::https://github.com/bitrise-steplib/steps-check.git:
+    # TODO(SW-3004): e2e is temporarily disabled. The `_setup` step in e2e/bitrise.yml mints an
+    # artifact-pull token via the retired Keycloak Auth Service endpoint
+    # (auth.services.bitrise.io/.../openid-connect/token), which now returns 404 after the
+    # decommission in favor of the Token Issuer Service (TIS). TIS does not expose public token
+    # creation, so the e2e harness needs a new way to obtain a token. Re-enable once the
+    # replacement (staging TIS token endpoint + credential) is confirmed.
+    # - git::https://github.com/bitrise-steplib/steps-check.git:
+    #     inputs:
+    #     - workflow: e2e
+    - script:
+        title: e2e temporarily disabled (SW-3004)
         inputs:
-        - workflow: e2e
+        - content: |-
+            #!/bin/env bash
+            echo "e2e tests are temporarily disabled (SW-3004): the artifact-pull token endpoint was retired."
+            echo "See the TODO in bitrise.yml and e2e/bitrise.yml _setup."
 
   generate_readme:
     steps:
