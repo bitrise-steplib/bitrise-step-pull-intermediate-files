@@ -364,9 +364,9 @@ func (ad *ConcurrentArtifactDownloader) verifyAndLogChecksum(path string, detail
 
 	switch status {
 	case checksumSingleMismatch:
-		ad.Logger.Warnf("Checksum mismatch for %s: md5=%s does not match single-part ETag=%s", filepath.Base(path), md5sum, details.ETag)
+		ad.Logger.Warnf("Checksum mismatch for %s: md5=%s, etag=%s", filepath.Base(path), md5sum, details.ETag)
 	case checksumMultipartMismatch:
-		ad.Logger.Warnf("Multipart ETag mismatch for %s: recomputed ETag does not match etag=%s (object may use a non-MD5 ETag or a different upload part size)", filepath.Base(path), details.ETag)
+		ad.Logger.Warnf("Multipart ETag mismatch for %s: md5=%s, recomputed=%s, etag=%s (object may use a non-MD5 ETag or a different upload part size)", filepath.Base(path), md5sum, multipartETag, details.ETag)
 	default:
 		ad.Logger.Printf("Checksum for %s: md5=%s, etag=%s, validation=%s", filepath.Base(path), md5sum, details.ETag, status)
 	}
