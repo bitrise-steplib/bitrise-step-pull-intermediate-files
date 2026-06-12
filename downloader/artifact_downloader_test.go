@@ -1,6 +1,7 @@
 package downloader
 
 import (
+	"bytes"
 	"crypto/md5"
 	"fmt"
 	"net/http"
@@ -92,6 +93,43 @@ func Test_DownloadAndSaveArtifacts(t *testing.T) {
 	}
 
 	_ = os.RemoveAll(targetDir)
+}
+
+// Test_DownloadAndSaveArtifacts_MultipartETag exercises the full multipart validation path against
+// a fake server. The target part size is lowered so a small body still splits into several parts —
+// in production a multipart ETag only appears for files larger than the 100 MiB part size.
+func Test_DownloadAndSaveArtifacts_MultipartETag(t *testing.T) {
+	const partSize = 5
+	defer func(orig int64) { multipartTargetPartSize = orig }(multipartTargetPartSize)
+	multipartTargetPartSize = partSize
+
+	content := bytes.Repeat([]byte("a"), 12) // 5 + 5 + 2 -> 3 parts
+	wantMD5 := fmt.Sprintf("%x", md5.Sum(content))
+	wantETag := independentMultipartETag(content, partSize) // "<hash>-3"
+
+	svr := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("ETag", `"`+wantETag+`"`)
+		_, _ = w.Write(content)
+	}))
+	defer svr.Close()
+
+	targetDir, err := getDownloadDir(relativeDownloadPath)
+	assert.NoError(t, err)
+	defer func() { _ = os.RemoveAll(targetDir) }()
+
+	downloadURL := svr.URL + "/largefile.bin"
+	artifacts := []api.ArtifactResponseItemModel{{DownloadURL: downloadURL, Title: "largefile.bin"}}
+
+	artifactDownloader := NewConcurrentArtifactDownloader(5*time.Minute, log.NewLogger(), nil)
+	results, err := artifactDownloader.DownloadAndSaveArtifacts(artifacts, targetDir)
+	assert.NoError(t, err)
+	assert.Len(t, results, 1)
+
+	got := results[0]
+	assert.NoError(t, got.DownloadError)
+	assert.Equal(t, wantMD5, got.DownloadDetails.MD5)
+	assert.Equal(t, wantETag, got.DownloadDetails.ETag)
+	assert.Equal(t, string(checksumMultipartOK), got.DownloadDetails.ChecksumStatus)
 }
 
 func Test_DownloadAndSaveArtifacts_DownloadFails(t *testing.T) {

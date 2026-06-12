@@ -31,11 +31,13 @@ import (
 const (
 	filePermission               = 0o655
 	maxConcurrentDownloadThreads = 10
-	// multipartTargetPartSize and multipartMaxParts mirror the storage backend's multipart upload
-	// settings, so the upload part size can be recomputed deterministically.
-	multipartTargetPartSize = 100 * (1 << 20) // 100 MiB
-	multipartMaxParts       = 10_000          // provider hard cap on parts per upload
+	multipartMaxParts            = 10_000 // provider hard cap on parts per upload
 )
+
+// multipartTargetPartSize mirrors the storage backend's target part size, so the upload part size
+// can be recomputed deterministically. It is a var only so tests can lower it to exercise
+// multi-part validation without a multi-hundred-MiB file.
+var multipartTargetPartSize int64 = 100 * (1 << 20) // 100 MiB
 
 // checksumStatus describes the outcome of validating a downloaded file against its remote ETag.
 type checksumStatus string
@@ -421,7 +423,7 @@ func (r *etagRecorder) value() string {
 // multipartPartSize recomputes the upload part size deterministically, mirroring the storage
 // backend: a 100 MiB target, raised only enough to keep the part count within the 10,000-part cap.
 func multipartPartSize(fileSize int64) int64 {
-	partSize := int64(multipartTargetPartSize)
+	partSize := multipartTargetPartSize
 	if capped := (fileSize + multipartMaxParts - 1) / multipartMaxParts; capped > partSize {
 		partSize = capped
 	}
