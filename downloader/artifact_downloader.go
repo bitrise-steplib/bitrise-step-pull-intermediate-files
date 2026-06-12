@@ -439,7 +439,7 @@ func fileChecksums(path string, partSize int64) (md5hex, multipartETag string, e
 	if err != nil {
 		return "", "", err
 	}
-	defer f.Close()
+	defer func() { err = errors.Join(err, f.Close()) }()
 
 	fullHash := md5.New()
 

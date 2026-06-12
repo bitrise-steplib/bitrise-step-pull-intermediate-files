@@ -40,7 +40,8 @@ func Test_DownloadAndSaveArtifacts(t *testing.T) {
 		// Single-part uploads expose the object MD5 as the ETag, which lets the
 		// downloader validate the fetched file.
 		w.Header().Set("ETag", `"`+dummyMD5+`"`)
-		_, _ = fmt.Fprint(w, dummyData)
+		_, err := fmt.Fprint(w, dummyData)
+		assert.NoError(t, err)
 	}))
 	defer svr.Close()
 
@@ -92,7 +93,7 @@ func Test_DownloadAndSaveArtifacts(t *testing.T) {
 		}
 	}
 
-	_ = os.RemoveAll(targetDir)
+	assert.NoError(t, os.RemoveAll(targetDir))
 }
 
 // Test_DownloadAndSaveArtifacts_MultipartETag exercises the full multipart validation path against
@@ -109,13 +110,14 @@ func Test_DownloadAndSaveArtifacts_MultipartETag(t *testing.T) {
 
 	svr := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("ETag", `"`+wantETag+`"`)
-		_, _ = w.Write(content)
+		_, err := w.Write(content)
+		assert.NoError(t, err)
 	}))
 	defer svr.Close()
 
 	targetDir, err := getDownloadDir(relativeDownloadPath)
 	assert.NoError(t, err)
-	defer func() { _ = os.RemoveAll(targetDir) }()
+	defer func() { assert.NoError(t, os.RemoveAll(targetDir)) }()
 
 	downloadURL := svr.URL + "/largefile.bin"
 	artifacts := []api.ArtifactResponseItemModel{{DownloadURL: downloadURL, Title: "largefile.bin"}}
@@ -155,7 +157,7 @@ func Test_DownloadAndSaveArtifacts_DownloadFails(t *testing.T) {
 	assert.EqualError(t, result[0].DownloadError, fmt.Sprintf("unable to download file from %s: failed to download intermediate file: Response status code is not ok: 401", downloadURL))
 	assert.NoError(t, err)
 
-	_ = os.RemoveAll(targetDir)
+	assert.NoError(t, os.RemoveAll(targetDir))
 }
 
 func Test_DownloadAndSaveArtifacts_RetriesFailingDownload(t *testing.T) {
@@ -168,7 +170,8 @@ func Test_DownloadAndSaveArtifacts_RetriesFailingDownload(t *testing.T) {
 			// The library will not attempt to perform any retries if this fails.
 			w.Header().Set("content-length", "1")
 			w.Header().Set("content-range", "0/2")
-			_, _ = w.Write([]byte("a"))
+			_, err := w.Write([]byte("a"))
+			assert.NoError(t, err)
 		} else {
 			w.WriteHeader(http.StatusInternalServerError)
 		}
@@ -188,12 +191,13 @@ func Test_DownloadAndSaveArtifacts_RetriesFailingDownload(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Greater(t, receivedRequestCount.Load(), uint64(1))
 
-	_ = os.RemoveAll(targetDir)
+	assert.NoError(t, os.RemoveAll(targetDir))
 }
 
 func Test_DownloadAndSaveZipDirectoryArtifacts(t *testing.T) {
 	svr := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		_, _ = fmt.Fprint(w, "dummy data")
+		_, err := fmt.Fprint(w, "dummy data")
+		assert.NoError(t, err)
 	}))
 	defer svr.Close()
 
@@ -238,12 +242,13 @@ func Test_DownloadAndSaveZipDirectoryArtifacts(t *testing.T) {
 	assert.Len(t, unzipCmdArguments, 2)
 	assert.Equal(t, "-o", unzipCmdArguments[0])
 
-	_ = os.RemoveAll(targetDir)
+	assert.NoError(t, os.RemoveAll(targetDir))
 }
 
 func Test_DownloadAndSaveTarDirectoryArtifacts(t *testing.T) {
 	svr := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		_, _ = fmt.Fprint(w, "dummy data")
+		_, err := fmt.Fprint(w, "dummy data")
+		assert.NoError(t, err)
 	}))
 	defer svr.Close()
 
@@ -282,5 +287,5 @@ func Test_DownloadAndSaveTarDirectoryArtifacts(t *testing.T) {
 	cmd.AssertExpectations(t)
 	cmdFactory.AssertExpectations(t)
 
-	_ = os.RemoveAll(targetDir)
+	assert.NoError(t, os.RemoveAll(targetDir))
 }
