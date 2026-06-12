@@ -361,7 +361,7 @@ func (ad *ConcurrentArtifactDownloader) verifyAndLogChecksum(path string, detail
 		return
 	}
 
-	status := ad.validateChecksum(md5sum, multipartETag, details.ETag)
+	status := validateChecksum(md5sum, multipartETag, details.ETag)
 	details.ChecksumStatus = string(status)
 
 	switch status {
@@ -377,7 +377,7 @@ func (ad *ConcurrentArtifactDownloader) verifyAndLogChecksum(path string, detail
 // validateChecksum compares the precomputed local checksums against the remote ETag: an ETag of the
 // form "<hash>-<N>" is multipart and compared against multipartETag, otherwise it is a plain MD5
 // compared against md5sum.
-func (ad *ConcurrentArtifactDownloader) validateChecksum(md5sum, multipartETag, etag string) checksumStatus {
+func validateChecksum(md5sum, multipartETag, etag string) checksumStatus {
 	if strings.Contains(etag, "-") {
 		if strings.EqualFold(multipartETag, etag) {
 			return checksumMultipartOK

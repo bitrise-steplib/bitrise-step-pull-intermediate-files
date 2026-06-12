@@ -1,27 +1,17 @@
 package downloader
 
 import (
-	"bytes"
 	"crypto/md5"
 	"fmt"
 	"os"
 	"path/filepath"
 	"testing"
 
-	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
-func writeTempFile(t *testing.T, data []byte) string {
-	t.Helper()
-	path := filepath.Join(t.TempDir(), "artifact")
-	if err := os.WriteFile(path, data, 0o644); err != nil {
-		t.Fatalf("failed to write temp file: %s", err)
-	}
-	return path
-}
-
-// independentMultipartETag recomputes the S3/R2 multipart ETag in a straightforward in-memory
-// way, to cross-check the streaming implementation.
+// independentMultipartETag recomputes the S3/R2 multipart ETag in a straightforward in-memory way,
+// as an independent cross-check of the streaming implementation.
 func independentMultipartETag(data []byte, partSize int) string {
 	var digests []byte
 	parts := 0
@@ -35,83 +25,130 @@ func independentMultipartETag(data []byte, partSize int) string {
 	return fmt.Sprintf("%x-%d", final, parts)
 }
 
-func Test_fileChecksums_multipartMatchesIndependentComputation(t *testing.T) {
-	content := bytes.Repeat([]byte("x"), 12) // 5 + 5 + 2 -> 3 parts at partSize 5
-	path := writeTempFile(t, content)
+func Test_validateChecksum(t *testing.T) {
+	cases := map[string]struct {
+		md5sum        string
+		multipartETag string
+		etag          string
+		want          checksumStatus
+	}{
+		"single match": {
+			md5sum: "5d41402abc4b2a76b9719d911017c592",
+			etag:   "5d41402abc4b2a76b9719d911017c592",
+			want:   checksumSingleOK,
+		},
+		"single match is case-insensitive": {
+			md5sum: "5D41402ABC4B2A76B9719D911017C592",
+			etag:   "5d41402abc4b2a76b9719d911017c592",
+			want:   checksumSingleOK,
+		},
+		"single mismatch": {
+			md5sum: "5d41402abc4b2a76b9719d911017c592",
+			etag:   "00000000000000000000000000000000",
+			want:   checksumSingleMismatch,
+		},
+		"multipart match": {
+			multipartETag: "554a2f6105cc700b8cc987b5ddfb8102-2",
+			etag:          "554a2f6105cc700b8cc987b5ddfb8102-2",
+			want:          checksumMultipartOK,
+		},
+		"multipart match is case-insensitive": {
+			multipartETag: "554a2f6105cc700b8cc987b5ddfb8102-2",
+			etag:          "554A2F6105CC700B8CC987B5DDFB8102-2",
+			want:          checksumMultipartOK,
+		},
+		"multipart mismatch": {
+			multipartETag: "554a2f6105cc700b8cc987b5ddfb8102-2",
+			etag:          "deadbeefdeadbeefdeadbeefdeadbeef-2",
+			want:          checksumMultipartMismatch,
+		},
+		"any dash-suffixed etag is treated as multipart and can mismatch": {
+			multipartETag: "554a2f6105cc700b8cc987b5ddfb8102-2",
+			etag:          "abc-notanumber",
+			want:          checksumMultipartMismatch,
+		},
+	}
 
-	md5hex, multipart, err := fileChecksums(path, 5)
-
-	assert.NoError(t, err)
-	assert.Equal(t, fmt.Sprintf("%x", md5.Sum(content)), md5hex) // whole-file MD5 from the same pass
-	assert.Equal(t, independentMultipartETag(content, 5), multipart)
-	assert.True(t, len(multipart) > 2 && multipart[len(multipart)-2:] == "-3")
+	for name, tc := range cases {
+		t.Run(name, func(t *testing.T) {
+			require.Equal(t, tc.want, validateChecksum(tc.md5sum, tc.multipartETag, tc.etag))
+		})
+	}
 }
 
-func Test_fileChecksums_exactMultipleBoundary(t *testing.T) {
-	content := bytes.Repeat([]byte("y"), 10) // 5 + 5 -> exactly 2 parts, no trailing part
-	path := writeTempFile(t, content)
+func Test_fileChecksums(t *testing.T) {
+	cases := map[string]struct {
+		given         string
+		partSize      int64
+		wantMD5       string
+		wantMultipart string
+	}{
+		"single-shot returns the whole-file MD5": {
+			given:    "hello",
+			partSize: 0,
+			wantMD5:  "5d41402abc4b2a76b9719d911017c592",
+		},
+		"empty file": {
+			given:    "",
+			partSize: 0,
+			wantMD5:  "d41d8cd98f00b204e9800998ecf8427e",
+		},
+		"multipart fitting one part": {
+			given:         "hello",
+			partSize:      10,
+			wantMD5:       "5d41402abc4b2a76b9719d911017c592",
+			wantMultipart: "62109206880d38a4010a98e11243924a-1",
+		},
+		"multipart spanning two parts with a trailing partial part": {
+			given:         "hello",
+			partSize:      3,
+			wantMD5:       "5d41402abc4b2a76b9719d911017c592",
+			wantMultipart: "554a2f6105cc700b8cc987b5ddfb8102-2",
+		},
+		"multipart on an exact-multiple boundary has no trailing part": {
+			given:         "abcdef",
+			partSize:      3,
+			wantMD5:       "e80b5017098950fc58aad83c8c14978e",
+			wantMultipart: "4c8e93283780e078db9e0c6b9b3f8043-2",
+		},
+		"multipart spanning three parts": {
+			given:         "abcdefg",
+			partSize:      3,
+			wantMD5:       "7ac66c0f148de9519b8bd264312c4d64",
+			wantMultipart: "d322b115ece92a45e0909788b142235c-3",
+		},
+	}
 
-	_, multipart, err := fileChecksums(path, 5)
+	for name, tc := range cases {
+		t.Run(name, func(t *testing.T) {
+			path := filepath.Join(t.TempDir(), "artifact")
+			require.NoError(t, os.WriteFile(path, []byte(tc.given), 0o600))
 
-	assert.NoError(t, err)
-	assert.Equal(t, independentMultipartETag(content, 5), multipart)
-	assert.Equal(t, "-2", multipart[len(multipart)-2:])
-}
+			gotMD5, gotMultipart, err := fileChecksums(path, tc.partSize)
 
-func Test_fileChecksums_md5OnlyWhenNoPartSize(t *testing.T) {
-	content := bytes.Repeat([]byte("z"), 3000) // larger than the read buffer step is unnecessary here
-	path := writeTempFile(t, content)
-
-	md5hex, multipart, err := fileChecksums(path, 0)
-
-	assert.NoError(t, err)
-	assert.Equal(t, fmt.Sprintf("%x", md5.Sum(content)), md5hex)
-	assert.Empty(t, multipart) // no multipart ETag is computed when partSize == 0
-}
-
-func Test_validateChecksum_singlePart(t *testing.T) {
-	ad := &ConcurrentArtifactDownloader{}
-	md5sum := fmt.Sprintf("%x", md5.Sum([]byte("hello world")))
-
-	assert.Equal(t, checksumSingleOK, ad.validateChecksum(md5sum, "", md5sum))
-	assert.Equal(t, checksumSingleOK, ad.validateChecksum(md5sum, "", "5EB63BBBE01EEED093CB22BB8F5ACDC3")) // case-insensitive
-	assert.Equal(t, checksumSingleMismatch, ad.validateChecksum(md5sum, "", "deadbeefdeadbeefdeadbeefdeadbeef"))
-}
-
-func Test_validateChecksum_multipartDeterministic(t *testing.T) {
-	ad := &ConcurrentArtifactDownloader{}
-	size := int64(6 * 1024 * 1024) // 6 MiB -> 1 part at the 100 MiB deterministic part size
-	path := writeTempFile(t, bytes.Repeat([]byte("a"), int(size)))
-
-	// Compute both checksums in one pass, exactly as verifyAndLogChecksum does.
-	md5sum, expected, err := fileChecksums(path, multipartPartSize(size))
-	assert.NoError(t, err)
-
-	assert.Equal(t, checksumMultipartOK, ad.validateChecksum(md5sum, expected, expected))
-	assert.Equal(t, checksumMultipartMismatch, ad.validateChecksum(md5sum, expected, "0123456789abcdef0123456789abcdef-2"))
-}
-
-func Test_validateChecksum_multipartMismatch(t *testing.T) {
-	ad := &ConcurrentArtifactDownloader{}
-	md5sum := fmt.Sprintf("%x", md5.Sum([]byte("small file")))
-	recomputed := "0123456789abcdef0123456789abcdef-1" // what the local file produced
-
-	// A remote ETag the recomputation can't reproduce is reported as a mismatch — it may be a
-	// non-MD5 ETag (SSE-KMS/SSE-C), not necessarily corruption.
-	assert.Equal(t, checksumMultipartMismatch, ad.validateChecksum(md5sum, recomputed, "abc-3"))
-	// Any "-"-suffixed value is treated as multipart; a malformed one simply won't match.
-	assert.Equal(t, checksumMultipartMismatch, ad.validateChecksum(md5sum, recomputed, "abc-notanumber"))
+			require.NoError(t, err)
+			require.Equal(t, tc.wantMD5, gotMD5)
+			require.Equal(t, tc.wantMultipart, gotMultipart)
+		})
+	}
 }
 
 func Test_multipartPartSize(t *testing.T) {
 	const target = int64(100 * (1 << 20)) // 100 MiB
 
-	// Below ~976 GiB the 100 MiB target always wins.
-	assert.Equal(t, target, multipartPartSize(1))
-	assert.Equal(t, target, multipartPartSize(6*1024*1024))
-	assert.Equal(t, target, multipartPartSize(50*target)) // 50 parts, still 100 MiB each
+	cases := map[string]struct {
+		fileSize int64
+		want     int64
+	}{
+		"tiny file uses the target part size":            {fileSize: 1, want: target},
+		"a few MiB use the target part size":             {fileSize: 6 * 1024 * 1024, want: target},
+		"dozens of parts still use the target part size": {fileSize: 50 * target, want: target},
+		"beyond the 10,000-part cap grows the part size": {fileSize: target*10_000 + 1, want: target + 1},
+	}
 
-	// Past the 10,000-part cap the part size grows to ceil(size / 10_000).
-	huge := target*10_000 + 1
-	assert.Equal(t, (huge+9_999)/10_000, multipartPartSize(huge))
+	for name, tc := range cases {
+		t.Run(name, func(t *testing.T) {
+			require.Equal(t, tc.want, multipartPartSize(tc.fileSize))
+		})
+	}
 }

@@ -20,6 +20,7 @@ import (
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
+	"github.com/stretchr/testify/require"
 )
 
 const relativeDownloadPath = "_tmp"
@@ -116,7 +117,7 @@ func Test_DownloadAndSaveArtifacts_MultipartETag(t *testing.T) {
 	defer svr.Close()
 
 	targetDir, err := getDownloadDir(relativeDownloadPath)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	defer func() { assert.NoError(t, os.RemoveAll(targetDir)) }()
 
 	downloadURL := svr.URL + "/largefile.bin"
@@ -124,8 +125,8 @@ func Test_DownloadAndSaveArtifacts_MultipartETag(t *testing.T) {
 
 	artifactDownloader := NewConcurrentArtifactDownloader(5*time.Minute, log.NewLogger(), nil)
 	results, err := artifactDownloader.DownloadAndSaveArtifacts(artifacts, targetDir)
-	assert.NoError(t, err)
-	assert.Len(t, results, 1)
+	require.NoError(t, err)
+	require.Len(t, results, 1)
 
 	got := results[0]
 	assert.NoError(t, got.DownloadError)
