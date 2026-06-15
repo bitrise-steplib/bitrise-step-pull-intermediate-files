@@ -19,31 +19,53 @@ workflows:
     - git::https://github.com/bitrise-steplib/steps-check.git: { }
 
   e2e:
+    envs:
+    - PIPELINE_IDS: |-
+        pull-artifact-pipeline
     steps:
-    # TODO(SW-3004): e2e is disabled. The `_setup` step in e2e/bitrise.yml mints a production
-    # artifact-pull JWT via the retired Keycloak Auth Service endpoint, which now returns 404
-    # after that service was decommissioned. This was the only use-case where a step needed a
-    # production token generated from a build.
-    #
-    # We are NOT migrating the current self-minting approach: exposing production token creation
-    # to builds for this single use-case is not desirable. Instead, the agreed plan is to rebuild
-    # the e2e as a real pipeline-based CI setup. In a pipeline, earlier stages run the generator
-    # workflows (textfile_generator, tar_archive_generator, zip_archive_generator_en/jp, ...) and a
-    # final stage runs the four pull-and-verify workflows; the platform then injects
-    # BITRISEIO_FINISHED_STAGES and the artifact-pull token automatically on every run, so no manual
-    # token fetch is needed. The step itself needs no changes, only the e2e config is restructured.
-    # Because the shared Step CI scaffolding doesn't support pipeline configs, this will live as a
-    # separate Bitrise project alongside it, as an additional check rather than a replacement.
-    # - git::https://github.com/bitrise-steplib/steps-check.git:
-    #     inputs:
-    #     - workflow: e2e
     - script:
-        title: e2e disabled (SW-3004)
+        title: Trigger e2e pipelines and wait for them
         inputs:
         - content: |-
-            #!/bin/env bash
-            echo "e2e tests are disabled (SW-3004): the production artifact-pull token endpoint was retired."
-            echo "These tests will be replaced by a separate pipeline-based Bitrise project; see the TODO in bitrise.yml."
+            #!/usr/bin/env bash
+            set -euo pipefail
+
+            # The e2e is pipeline-based (pipeline intermediate files and the artifact-pull token only
+            # exist on the platform), so it runs on a dedicated bitrise.io app defined by
+            # e2e/bitrise.yml. Trigger each pipeline on the current branch and wait for it.
+            # Required secrets: PULL_INTERMEDIATE_FILES_APP_SLUG, BITRISE_API_TOKEN.
+            : "${PULL_INTERMEDIATE_FILES_APP_SLUG:?}"
+            : "${BITRISE_API_TOKEN:?}"
+
+            api="https://api.bitrise.io/v0.1/apps/$PULL_INTERMEDIATE_FILES_APP_SLUG"
+            auth="Authorization: token $BITRISE_API_TOKEN"
+
+            run_pipeline() {
+              local pipeline="$1" resp build_slug build_url status
+              resp=$(curl -fsS -X POST "$api/builds" -H "$auth" -H "Content-Type: application/json" \
+                -d "{\"hook_info\":{\"type\":\"bitrise\"},\"build_params\":{\"branch\":\"$BITRISE_GIT_BRANCH\",\"pipeline_id\":\"$pipeline\"}}")
+              build_slug=$(echo "$resp" | jq -r '.build_slug')
+              build_url=$(echo "$resp" | jq -r '.build_url')
+              if [ -z "$build_slug" ] || [ "$build_slug" = "null" ]; then
+                echo "Failed to trigger $pipeline: $resp"; return 1
+              fi
+              echo "Triggered $pipeline: $build_url"
+
+              # Poll status: 0=running, 1=success, 2=failed, 3=aborted, 4=aborted-with-success.
+              while true; do
+                sleep 30
+                status=$(curl -fsS "$api/builds/$build_slug" -H "$auth" | jq -r '.data.status')
+                case "$status" in
+                0) echo "  running... $build_url" ;;
+                1) echo "  $pipeline succeeded"; return 0 ;;
+                *) echo "  $pipeline did not succeed (status=$status): $build_url"; return 1 ;;
+                esac
+              done
+            }
+
+            for pipeline in $PIPELINE_IDS; do
+              run_pipeline "$pipeline"
+            done
 
   generate_readme:
     steps:
