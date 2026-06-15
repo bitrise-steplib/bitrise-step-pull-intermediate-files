@@ -89,7 +89,6 @@ workflows:
             EXPORT_OPTIONS_PLIST
             TEST_JSON
             TEXT_FILE_TXT
-            APK
             LARGEFILE
         - dirs: |-
             ARCHIVE_ZIP
@@ -138,7 +137,6 @@ step_bundles:
             envman unset --key EXPORT_OPTIONS_PLIST
             envman unset --key TEST_JSON
             envman unset --key TEXT_FILE_TXT
-            envman unset --key APK
             envman unset --key LARGEFILE
             envman unset --key ARCHIVE_ZIP
             envman unset --key ARCHIVE_LAYOUT
