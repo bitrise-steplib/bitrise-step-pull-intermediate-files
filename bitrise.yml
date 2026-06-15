@@ -19,53 +19,10 @@ workflows:
     - git::https://github.com/bitrise-steplib/steps-check.git: { }
 
   e2e:
-    envs:
-    - PIPELINE_IDS: |-
-        pull-artifact-pipeline
     steps:
-    - script:
-        title: Trigger e2e pipelines and wait for them
+    - git::https://github.com/bitrise-steplib/steps-check.git:
         inputs:
-        - content: |-
-            #!/usr/bin/env bash
-            set -euo pipefail
-
-            # The e2e is pipeline-based (pipeline intermediate files and the artifact-pull token only
-            # exist on the platform), so it runs on a dedicated bitrise.io app defined by
-            # e2e/bitrise.yml. Trigger each pipeline on the current branch and wait for it.
-            # Required secrets: PULL_INTERMEDIATE_FILES_APP_SLUG, BITRISE_API_TOKEN.
-            : "${PULL_INTERMEDIATE_FILES_APP_SLUG:?}"
-            : "${BITRISE_API_TOKEN:?}"
-
-            api="https://api.bitrise.io/v0.1/apps/$PULL_INTERMEDIATE_FILES_APP_SLUG"
-            auth="Authorization: token $BITRISE_API_TOKEN"
-
-            run_pipeline() {
-              local pipeline="$1" resp build_slug build_url status
-              resp=$(curl -fsS -X POST "$api/builds" -H "$auth" -H "Content-Type: application/json" \
-                -d "{\"hook_info\":{\"type\":\"bitrise\"},\"build_params\":{\"branch\":\"$BITRISE_GIT_BRANCH\",\"pipeline_id\":\"$pipeline\"}}")
-              build_slug=$(echo "$resp" | jq -r '.build_slug')
-              build_url=$(echo "$resp" | jq -r '.build_url')
-              if [ -z "$build_slug" ] || [ "$build_slug" = "null" ]; then
-                echo "Failed to trigger $pipeline: $resp"; return 1
-              fi
-              echo "Triggered $pipeline: $build_url"
-
-              # Poll status: 0=running, 1=success, 2=failed, 3=aborted, 4=aborted-with-success.
-              while true; do
-                sleep 30
-                status=$(curl -fsS "$api/builds/$build_slug" -H "$auth" | jq -r '.data.status')
-                case "$status" in
-                0) echo "  running... $build_url" ;;
-                1) echo "  $pipeline succeeded"; return 0 ;;
-                *) echo "  $pipeline did not succeed (status=$status): $build_url"; return 1 ;;
-                esac
-              done
-            }
-
-            for pipeline in $PIPELINE_IDS; do
-              run_pipeline "$pipeline"
-            done
+        - workflow: e2e
 
   generate_readme:
     steps:
