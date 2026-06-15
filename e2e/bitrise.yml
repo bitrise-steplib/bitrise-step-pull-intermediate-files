@@ -1,5 +1,5 @@
 ---
-format_version: '11'
+format_version: "11"
 default_step_lib_source: https://github.com/bitrise-io/bitrise-steplib.git
 project_type: other
 workflows:
@@ -11,7 +11,7 @@ workflows:
     - test_download_specific_workflow_artifacts
   test_download_tar_archive:
     steps:
-    - bundle::cleanup: {}
+    - bundle::cleanup: { }
     - path::./:
         title: Execute step
         inputs:
@@ -42,7 +42,7 @@ workflows:
             fi
   test_download_zip_archive:
     steps:
-    - bundle::cleanup: {}
+    - bundle::cleanup: { }
     - path::./:
         title: Execute step
         inputs:
@@ -73,7 +73,7 @@ workflows:
             fi
   test_download_all_artifacts_of_build:
     steps:
-    - bundle::cleanup: {}
+    - bundle::cleanup: { }
     - path::./:
         title: Execute step
         inputs:
@@ -95,7 +95,7 @@ workflows:
             ARCHIVE_ZIP
   test_download_specific_workflow_artifacts:
     steps:
-    - bundle::cleanup: {}
+    - bundle::cleanup: { }
     - path::./:
         title: Execute step
         inputs:
@@ -111,7 +111,7 @@ workflows:
   # Runs in the staged pipeline: pulls by the stage-scoped source identifier (stage.workflow).
   test_download_staged_workflow_artifacts:
     steps:
-    - bundle::cleanup: {}
+    - bundle::cleanup: { }
     - path::./:
         title: Execute step
         inputs:
