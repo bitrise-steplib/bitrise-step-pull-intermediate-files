@@ -29,15 +29,6 @@ func (t *tracker) logFileTransfer(details downloader.TransferDetails, err error)
 		"duration_ms":  details.Duration.Milliseconds(),
 		"size_bytes":   details.Size,
 	}
-	if details.MD5 != "" {
-		properties["md5"] = details.MD5
-	}
-	if details.ETag != "" {
-		properties["etag"] = details.ETag
-	}
-	if details.ChecksumStatus != "" {
-		properties["checksum_status"] = details.ChecksumStatus
-	}
 	if err != nil {
 		properties["error"] = err.Error()
 	}

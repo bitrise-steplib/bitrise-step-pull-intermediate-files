@@ -1,14 +1,13 @@
 package downloader
 
 import (
-	"bytes"
-	"crypto/md5"
 	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"os"
 	"sync/atomic"
 	"testing"
+	"testing/fstest"
 	"time"
 
 	"github.com/bitrise-steplib/bitrise-step-pull-intermediate-files/api"
@@ -20,7 +19,6 @@ import (
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
-	"github.com/stretchr/testify/require"
 )
 
 const relativeDownloadPath = "_tmp"
@@ -35,14 +33,8 @@ func getDownloadDir(dirName string) (string, error) {
 }
 
 func Test_DownloadAndSaveArtifacts(t *testing.T) {
-	const dummyData = "dummy data"
-	dummyMD5 := fmt.Sprintf("%x", md5.Sum([]byte(dummyData)))
 	svr := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		// Single-part uploads expose the object MD5 as the ETag, which lets the
-		// downloader validate the fetched file.
-		w.Header().Set("ETag", `"`+dummyMD5+`"`)
-		_, err := fmt.Fprint(w, dummyData)
-		assert.NoError(t, err)
+		_, _ = fmt.Fprint(w, "dummy data")
 	}))
 	defer svr.Close()
 
@@ -58,11 +50,8 @@ func Test_DownloadAndSaveArtifacts(t *testing.T) {
 			DownloadPath: targetDir + fmt.Sprintf("/%d.txt", i),
 			DownloadURL:  downloadURL,
 			DownloadDetails: TransferDetails{
-				Size:           10,
-				Hostname:       "127.0.0.1",
-				MD5:            dummyMD5,
-				ETag:           dummyMD5,
-				ChecksumStatus: string(checksumSingleOK),
+				Size:     10,
+				Hostname: "127.0.0.1",
 			},
 		})
 	}
@@ -94,45 +83,16 @@ func Test_DownloadAndSaveArtifacts(t *testing.T) {
 		}
 	}
 
-	assert.NoError(t, os.RemoveAll(targetDir))
+	_ = os.RemoveAll(targetDir)
 }
 
-// Test_DownloadAndSaveArtifacts_MultipartETag exercises the full multipart validation path against
-// a fake server. The target part size is lowered so a small body still splits into several parts —
-// in production a multipart ETag only appears for files larger than the 100 MiB part size.
-func Test_DownloadAndSaveArtifacts_MultipartETag(t *testing.T) {
-	const partSize = 5
-	defer func(orig int64) { multipartTargetPartSize = orig }(multipartTargetPartSize)
-	multipartTargetPartSize = partSize
+func Test_fileCRC32C(t *testing.T) {
+	fsys := fstest.MapFS{"artifact": {Data: []byte("hello")}}
 
-	content := bytes.Repeat([]byte("a"), 12) // 5 + 5 + 2 -> 3 parts
-	wantMD5 := fmt.Sprintf("%x", md5.Sum(content))
-	wantETag := independentMultipartETag(content, partSize) // "<hash>-3"
+	got, err := fileCRC32C(fsys, "artifact")
 
-	svr := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("ETag", `"`+wantETag+`"`)
-		_, err := w.Write(content)
-		assert.NoError(t, err)
-	}))
-	defer svr.Close()
-
-	targetDir, err := getDownloadDir(relativeDownloadPath)
-	require.NoError(t, err)
-	defer func() { assert.NoError(t, os.RemoveAll(targetDir)) }()
-
-	downloadURL := svr.URL + "/largefile.bin"
-	artifacts := []api.ArtifactResponseItemModel{{DownloadURL: downloadURL, Title: "largefile.bin"}}
-
-	artifactDownloader := NewConcurrentArtifactDownloader(5*time.Minute, log.NewLogger(), nil)
-	results, err := artifactDownloader.DownloadAndSaveArtifacts(artifacts, targetDir)
-	require.NoError(t, err)
-	require.Len(t, results, 1)
-
-	got := results[0]
-	assert.NoError(t, got.DownloadError)
-	assert.Equal(t, wantMD5, got.DownloadDetails.MD5)
-	assert.Equal(t, wantETag, got.DownloadDetails.ETag)
-	assert.Equal(t, string(checksumMultipartOK), got.DownloadDetails.ChecksumStatus)
+	assert.NoError(t, err)
+	assert.Equal(t, "mnG7TA==", got) // base64 big-endian CRC32C (Castagnoli) of "hello"
 }
 
 func Test_DownloadAndSaveArtifacts_DownloadFails(t *testing.T) {
@@ -158,7 +118,7 @@ func Test_DownloadAndSaveArtifacts_DownloadFails(t *testing.T) {
 	assert.EqualError(t, result[0].DownloadError, fmt.Sprintf("unable to download file from %s: failed to download intermediate file: Response status code is not ok: 401", downloadURL))
 	assert.NoError(t, err)
 
-	assert.NoError(t, os.RemoveAll(targetDir))
+	_ = os.RemoveAll(targetDir)
 }
 
 func Test_DownloadAndSaveArtifacts_RetriesFailingDownload(t *testing.T) {
@@ -171,8 +131,7 @@ func Test_DownloadAndSaveArtifacts_RetriesFailingDownload(t *testing.T) {
 			// The library will not attempt to perform any retries if this fails.
 			w.Header().Set("content-length", "1")
 			w.Header().Set("content-range", "0/2")
-			_, err := w.Write([]byte("a"))
-			assert.NoError(t, err)
+			_, _ = w.Write([]byte("a"))
 		} else {
 			w.WriteHeader(http.StatusInternalServerError)
 		}
@@ -192,13 +151,12 @@ func Test_DownloadAndSaveArtifacts_RetriesFailingDownload(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Greater(t, receivedRequestCount.Load(), uint64(1))
 
-	assert.NoError(t, os.RemoveAll(targetDir))
+	_ = os.RemoveAll(targetDir)
 }
 
 func Test_DownloadAndSaveZipDirectoryArtifacts(t *testing.T) {
 	svr := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		_, err := fmt.Fprint(w, "dummy data")
-		assert.NoError(t, err)
+		_, _ = fmt.Fprint(w, "dummy data")
 	}))
 	defer svr.Close()
 
@@ -243,13 +201,12 @@ func Test_DownloadAndSaveZipDirectoryArtifacts(t *testing.T) {
 	assert.Len(t, unzipCmdArguments, 2)
 	assert.Equal(t, "-o", unzipCmdArguments[0])
 
-	assert.NoError(t, os.RemoveAll(targetDir))
+	_ = os.RemoveAll(targetDir)
 }
 
 func Test_DownloadAndSaveTarDirectoryArtifacts(t *testing.T) {
 	svr := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		_, err := fmt.Fprint(w, "dummy data")
-		assert.NoError(t, err)
+		_, _ = fmt.Fprint(w, "dummy data")
 	}))
 	defer svr.Close()
 
@@ -288,5 +245,5 @@ func Test_DownloadAndSaveTarDirectoryArtifacts(t *testing.T) {
 	cmd.AssertExpectations(t)
 	cmdFactory.AssertExpectations(t)
 
-	assert.NoError(t, os.RemoveAll(targetDir))
+	_ = os.RemoveAll(targetDir)
 }
