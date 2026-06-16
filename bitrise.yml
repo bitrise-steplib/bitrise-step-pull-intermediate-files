@@ -24,4 +24,3 @@ workflows:
         inputs:
         - contrib_section: docs/contribution.md
         - example_section: docs/examples.md
-

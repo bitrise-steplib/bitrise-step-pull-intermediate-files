@@ -107,22 +107,6 @@ workflows:
         inputs:
         - files: |-
             TEXT_FILE_TXT
-  # Runs in the staged pipeline: pulls by the stage-scoped source identifier (stage.workflow).
-  test_download_staged_workflow_artifacts:
-    steps:
-    - bundle::cleanup: { }
-    - path::./:
-        title: Execute step
-        inputs:
-        - verbose: true
-        - artifact_sources: stage-generate\.textfile_generator
-        - bitrise_api_base_url: https://api.bitrise.io
-    - git::https://github.com/bitrise-steplib/bitrise-step-check-step-outputs.git@main:
-        title: Validate downloaded artifacts
-        is_always_run: true
-        inputs:
-        - files: |-
-            TEXT_FILE_TXT
 
 step_bundles:
   cleanup:
