@@ -10,26 +10,22 @@ import (
 	"testing/fstest"
 	"time"
 
-	"github.com/bitrise-steplib/bitrise-step-pull-intermediate-files/api"
-	"github.com/bitrise-steplib/bitrise-step-pull-intermediate-files/mocks"
-
 	"github.com/bitrise-io/go-utils/pathutil"
 	"github.com/bitrise-io/go-utils/v2/log"
+	"github.com/bitrise-steplib/bitrise-step-pull-intermediate-files/api"
+	"github.com/bitrise-steplib/bitrise-step-pull-intermediate-files/mocks"
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 )
 
-const relativeDownloadPath = "_tmp"
-
-func getDownloadDir(dirName string) (string, error) {
-	tempPath, err := pathutil.NormalizedOSTempDirPath(dirName)
-	if err != nil {
-		return "", err
-	}
-
-	return tempPath, nil
+func getDownloadDir(t *testing.T) string {
+	t.Helper()
+	tempPath, err := pathutil.NormalizedOSTempDirPath("_tmp")
+	assert.NoError(t, err)
+	t.Cleanup(func() { _ = os.RemoveAll(tempPath) })
+	return tempPath
 }
 
 func Test_DownloadAndSaveArtifacts(t *testing.T) {
@@ -38,8 +34,7 @@ func Test_DownloadAndSaveArtifacts(t *testing.T) {
 	}))
 	defer svr.Close()
 
-	targetDir, err := getDownloadDir(relativeDownloadPath)
-	assert.NoError(t, err)
+	targetDir := getDownloadDir(t)
 
 	var artifacts []api.ArtifactResponseItemModel
 	var expectedDownloadResults []ArtifactDownloadResult
@@ -82,8 +77,6 @@ func Test_DownloadAndSaveArtifacts(t *testing.T) {
 			t.Errorf("Download results mismatch (-want +got):\n%s", cmp.Diff(exp, result, ignoreFields))
 		}
 	}
-
-	_ = os.RemoveAll(targetDir)
 }
 
 func Test_fileCRC32C(t *testing.T) {
@@ -101,8 +94,7 @@ func Test_DownloadAndSaveArtifacts_DownloadFails(t *testing.T) {
 	}))
 	defer svr.Close()
 
-	targetDir, err := getDownloadDir(relativeDownloadPath)
-	assert.NoError(t, err)
+	targetDir := getDownloadDir(t)
 
 	downloadURL := svr.URL + "/1.txt"
 
@@ -117,8 +109,6 @@ func Test_DownloadAndSaveArtifacts_DownloadFails(t *testing.T) {
 
 	assert.EqualError(t, result[0].DownloadError, fmt.Sprintf("unable to download file from %s: failed to download intermediate file: Response status code is not ok: 401", downloadURL))
 	assert.NoError(t, err)
-
-	_ = os.RemoveAll(targetDir)
 }
 
 func Test_DownloadAndSaveArtifacts_RetriesFailingDownload(t *testing.T) {
@@ -138,20 +128,17 @@ func Test_DownloadAndSaveArtifacts_RetriesFailingDownload(t *testing.T) {
 	}))
 	defer svr.Close()
 
-	targetDir, err := getDownloadDir(relativeDownloadPath)
-	assert.NoError(t, err)
+	targetDir := getDownloadDir(t)
 
 	artifacts := []api.ArtifactResponseItemModel{
 		{DownloadURL: svr.URL + "/1.txt", Title: "1.txt"},
 	}
 
 	artifactDownloader := NewConcurrentArtifactDownloader(5*time.Second, log.NewLogger(), nil)
-	_, err = artifactDownloader.DownloadAndSaveArtifacts(artifacts, targetDir)
+	_, err := artifactDownloader.DownloadAndSaveArtifacts(artifacts, targetDir)
 
 	assert.NoError(t, err)
 	assert.Greater(t, receivedRequestCount.Load(), uint64(1))
-
-	_ = os.RemoveAll(targetDir)
 }
 
 func Test_DownloadAndSaveZipDirectoryArtifacts(t *testing.T) {
@@ -160,8 +147,7 @@ func Test_DownloadAndSaveZipDirectoryArtifacts(t *testing.T) {
 	}))
 	defer svr.Close()
 
-	targetDir, err := getDownloadDir(relativeDownloadPath)
-	assert.NoError(t, err)
+	targetDir := getDownloadDir(t)
 
 	downloadURL := fmt.Sprintf("%s/1.zip", svr.URL)
 	artifacts := []api.ArtifactResponseItemModel{
@@ -200,8 +186,6 @@ func Test_DownloadAndSaveZipDirectoryArtifacts(t *testing.T) {
 	unzipCmdArguments := cmdFactory.Calls[0].Arguments[1].([]string)
 	assert.Len(t, unzipCmdArguments, 2)
 	assert.Equal(t, "-o", unzipCmdArguments[0])
-
-	_ = os.RemoveAll(targetDir)
 }
 
 func Test_DownloadAndSaveTarDirectoryArtifacts(t *testing.T) {
@@ -210,8 +194,7 @@ func Test_DownloadAndSaveTarDirectoryArtifacts(t *testing.T) {
 	}))
 	defer svr.Close()
 
-	targetDir, err := getDownloadDir(relativeDownloadPath)
-	assert.NoError(t, err)
+	targetDir := getDownloadDir(t)
 
 	downloadURL := fmt.Sprintf("%s/1.tar", svr.URL)
 	artifacts := []api.ArtifactResponseItemModel{
@@ -244,6 +227,4 @@ func Test_DownloadAndSaveTarDirectoryArtifacts(t *testing.T) {
 
 	cmd.AssertExpectations(t)
 	cmdFactory.AssertExpectations(t)
-
-	_ = os.RemoveAll(targetDir)
 }
