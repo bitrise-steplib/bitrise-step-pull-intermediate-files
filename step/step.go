@@ -128,7 +128,8 @@ func (d IntermediateFileDownloader) Run(cfg Config) (Result, error) {
 		return Result{}, fmt.Errorf("failed to create artifact download directory: %w", err)
 	}
 
-	artifactDownloader := downloader.NewConcurrentArtifactDownloader(5*time.Minute, d.logger, d.cmdFactory)
+	useZipV2 := d.envRepository.Get("BITRISE_STEP_PULL_ARTIFACT_USE_ZIP_V2") == "true"
+	artifactDownloader := downloader.NewConcurrentArtifactDownloader(5*time.Minute, d.logger, d.cmdFactory, useZipV2)
 	downloadResults, err := artifactDownloader.DownloadAndSaveArtifacts(artifacts, targetDir)
 	if err != nil {
 		return Result{}, fmt.Errorf("failed to download artifacts: %w", err)

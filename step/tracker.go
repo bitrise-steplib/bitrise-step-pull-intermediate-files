@@ -19,7 +19,7 @@ func newTracker(envRepo env.Repository, logger log.Logger) tracker {
 		"app_slug":   envRepo.Get("BITRISE_APP_SLUG"),
 	}
 	return tracker{
-		tracker: analytics.NewDefaultTracker(logger, p),
+		tracker: analytics.NewDefaultTracker(logger, envRepo, p),
 	}
 }
 
