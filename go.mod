@@ -5,7 +5,7 @@ go 1.21
 require (
 	github.com/bitrise-io/go-steputils/v2 v2.0.0-alpha.34
 	github.com/bitrise-io/go-utils v1.0.13
-	github.com/bitrise-io/go-utils/v2 v2.0.0-alpha.23
+	github.com/bitrise-io/go-utils/v2 v2.0.0-alpha.36.0.20260612135825-fa80291d0871
 	github.com/bitrise-io/got v0.0.0-20250613112826-9af8c0e04db5
 	github.com/google/go-cmp v0.7.0
 	github.com/hashicorp/go-retryablehttp v0.7.7

@@ -1,6 +1,10 @@
 format_version: "11"
 default_step_lib_source: https://github.com/bitrise-io/bitrise-steplib.git
 project_type: other
+app:
+  envs:
+  # Exercise the pure-Go ziputil v2 extraction path in the e2e tests.
+  - BITRISE_STEP_PULL_ARTIFACT_USE_ZIP_V2: "true"
 workflows:
   test_all:
     after_run:

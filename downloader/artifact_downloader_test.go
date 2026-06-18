@@ -1,10 +1,13 @@
 package downloader
 
 import (
+	"archive/zip"
+	"bytes"
 	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"os"
+	"path/filepath"
 	"sync/atomic"
 	"testing"
 	"testing/fstest"
@@ -51,7 +54,7 @@ func Test_DownloadAndSaveArtifacts(t *testing.T) {
 		})
 	}
 
-	artifactDownloader := NewConcurrentArtifactDownloader(5*time.Minute, log.NewLogger(), nil)
+	artifactDownloader := NewConcurrentArtifactDownloader(5*time.Minute, log.NewLogger(), nil, false)
 
 	downloadResults, err := artifactDownloader.DownloadAndSaveArtifacts(artifacts, targetDir)
 	assert.NoError(t, err)
@@ -103,7 +106,7 @@ func Test_DownloadAndSaveArtifacts_DownloadFails(t *testing.T) {
 		api.ArtifactResponseItemModel{DownloadURL: downloadURL, Title: "1.txt"})
 
 	// TODO: mock command factory
-	artifactDownloader := NewConcurrentArtifactDownloader(5*time.Minute, log.NewLogger(), nil)
+	artifactDownloader := NewConcurrentArtifactDownloader(5*time.Minute, log.NewLogger(), nil, false)
 
 	result, err := artifactDownloader.DownloadAndSaveArtifacts(artifacts, targetDir)
 
@@ -134,7 +137,7 @@ func Test_DownloadAndSaveArtifacts_RetriesFailingDownload(t *testing.T) {
 		{DownloadURL: svr.URL + "/1.txt", Title: "1.txt"},
 	}
 
-	artifactDownloader := NewConcurrentArtifactDownloader(5*time.Second, log.NewLogger(), nil)
+	artifactDownloader := NewConcurrentArtifactDownloader(5*time.Second, log.NewLogger(), nil, false)
 	_, err := artifactDownloader.DownloadAndSaveArtifacts(artifacts, targetDir)
 
 	assert.NoError(t, err)
@@ -166,7 +169,7 @@ func Test_DownloadAndSaveZipDirectoryArtifacts(t *testing.T) {
 	cmdFactory := new(mocks.Factory)
 	cmdFactory.On("Create", "unzip", mock.Anything, mock.Anything).Return(cmd).Once()
 
-	artifactDownloader := NewConcurrentArtifactDownloader(5*time.Minute, log.NewLogger(), cmdFactory)
+	artifactDownloader := NewConcurrentArtifactDownloader(5*time.Minute, log.NewLogger(), cmdFactory, false)
 
 	downloadResults, err := artifactDownloader.DownloadAndSaveArtifacts(artifacts, targetDir)
 	assert.NoError(t, err)
@@ -186,6 +189,56 @@ func Test_DownloadAndSaveZipDirectoryArtifacts(t *testing.T) {
 	unzipCmdArguments := cmdFactory.Calls[0].Arguments[1].([]string)
 	assert.Len(t, unzipCmdArguments, 2)
 	assert.Equal(t, "-o", unzipCmdArguments[0])
+}
+
+func Test_DownloadAndSaveZipDirectoryArtifacts_ZipV2(t *testing.T) {
+	// Build a real zip archive so the pure-Go ziputil.UnZip has valid input to extract.
+	var archive bytes.Buffer
+	zw := zip.NewWriter(&archive)
+	w, err := zw.Create("hello.txt")
+	assert.NoError(t, err)
+	_, err = w.Write([]byte("hello world"))
+	assert.NoError(t, err)
+	assert.NoError(t, zw.Close())
+	zipBytes := archive.Bytes()
+
+	svr := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		_, _ = w.Write(zipBytes)
+	}))
+	defer svr.Close()
+
+	targetDir := getDownloadDir(t)
+
+	downloadURL := fmt.Sprintf("%s/1.zip", svr.URL)
+	artifacts := []api.ArtifactResponseItemModel{
+		{
+			DownloadURL: downloadURL,
+			Title:       "1.zip",
+			IntermediateFileInfo: api.IntermediateFileInfo{
+				IsDir: true,
+			},
+		},
+	}
+
+	// A command factory with no expectations: invoking the `unzip` CLI here would fail the test,
+	// proving the v2 path bypasses it entirely.
+	cmdFactory := new(mocks.Factory)
+
+	artifactDownloader := NewConcurrentArtifactDownloader(5*time.Minute, log.NewLogger(), cmdFactory, true)
+
+	downloadResults, err := artifactDownloader.DownloadAndSaveArtifacts(artifacts, targetDir)
+	assert.NoError(t, err)
+
+	assert.Equal(t, 1, len(downloadResults))
+	assert.NoError(t, downloadResults[0].DownloadError)
+	assert.Equal(t, filepath.Join(targetDir, "1"), downloadResults[0].DownloadPath)
+
+	extracted, err := os.ReadFile(filepath.Join(targetDir, "1", "hello.txt"))
+	assert.NoError(t, err)
+	assert.Equal(t, "hello world", string(extracted))
+
+	// The pure-Go extractor must not have shelled out to the `unzip` CLI.
+	assert.Len(t, cmdFactory.Calls, 0)
 }
 
 func Test_DownloadAndSaveTarDirectoryArtifacts(t *testing.T) {
@@ -213,7 +266,7 @@ func Test_DownloadAndSaveTarDirectoryArtifacts(t *testing.T) {
 	cmdFactory := new(mocks.Factory)
 	cmdFactory.On("Create", "tar", mock.Anything, mock.Anything).Return(cmd).Once()
 
-	artifactDownloader := NewConcurrentArtifactDownloader(5*time.Minute, log.NewLogger(), cmdFactory)
+	artifactDownloader := NewConcurrentArtifactDownloader(5*time.Minute, log.NewLogger(), cmdFactory, false)
 
 	downloadResults, err := artifactDownloader.DownloadAndSaveArtifacts(artifacts, targetDir)
 	assert.NoError(t, err)
