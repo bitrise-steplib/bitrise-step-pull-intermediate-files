@@ -1,0 +1,126 @@
+format_version: "11"
+default_step_lib_source: https://github.com/bitrise-io/bitrise-steplib.git
+project_type: other
+workflows:
+  test_all:
+    after_run:
+    - test_download_tar_archive
+    - test_download_zip_archive
+    - test_download_all_artifacts_of_build
+    - test_download_specific_workflow_artifacts
+  test_download_tar_archive:
+    steps:
+    - bundle::cleanup: {}
+    - path::./:
+        title: Execute step
+        inputs:
+        - verbose: true
+        - artifact_sources: tar_archive_generator
+        - bitrise_api_base_url: https://api.bitrise.io
+    - git::https://github.com/bitrise-steplib/bitrise-step-check-step-outputs.git@main:
+        title: Validate downloaded artifacts
+        is_always_run: true
+        inputs:
+        - files: |-
+            ARCHIVE_LAYOUT
+        - dirs: |-
+            ARCHIVE_TAR
+    - script:
+        inputs:
+        - content: |-
+            #!/bin/env bash
+            set -ex
+            cd $ARCHIVE_TAR
+            actual=$(tree -L 1 --noreport .)
+            expected=$(cat $ARCHIVE_LAYOUT)
+            if [ "$actual" != "$expected" ]; then
+              echo "actual:\n$actual"
+              echo
+              echo "expected:\n$expected"
+              exit 1
+            fi
+  test_download_zip_archive:
+    steps:
+    - bundle::cleanup: {}
+    - path::./:
+        title: Execute step
+        inputs:
+        - verbose: true
+        - artifact_sources: zip_archive_generator_en,zip_archive_generator_jp
+        - bitrise_api_base_url: https://api.bitrise.io
+    - git::https://github.com/bitrise-steplib/bitrise-step-check-step-outputs.git@main:
+        title: Validate downloaded artifacts
+        is_always_run: true
+        inputs:
+        - files: |-
+            ARCHIVE_LAYOUT
+        - dirs: |-
+            ARCHIVE_ZIP
+    - script:
+        inputs:
+        - content: |-
+            #!/bin/env bash
+            set -ex
+            cd $ARCHIVE_ZIP
+            actual=$(tree -L 1 --noreport .)
+            expected=$(cat $ARCHIVE_LAYOUT)
+            if [ "$actual" != "$expected" ]; then
+              echo "actual:\n$actual"
+              echo
+              echo "expected:\n$expected"
+              exit 1
+            fi
+  test_download_all_artifacts_of_build:
+    steps:
+    - bundle::cleanup: {}
+    - path::./:
+        title: Execute step
+        inputs:
+        - verbose: true
+        - artifact_sources: .*
+        - bitrise_api_base_url: https://api.bitrise.io
+    - git::https://github.com/bitrise-steplib/bitrise-step-check-step-outputs.git@main:
+        title: Validate downloaded artifacts
+        is_always_run: true
+        inputs:
+        - files: |-
+            EXAMPLE_CSV
+            EXPORT_OPTIONS_PLIST
+            TEST_JSON
+            TEXT_FILE_TXT
+            LARGEFILE
+        - dirs: |-
+            ARCHIVE_ZIP
+  test_download_specific_workflow_artifacts:
+    steps:
+    - bundle::cleanup: {}
+    - path::./:
+        title: Execute step
+        inputs:
+        - verbose: true
+        - artifact_sources: textfile_generator
+        - bitrise_api_base_url: https://api.bitrise.io
+    - git::https://github.com/bitrise-steplib/bitrise-step-check-step-outputs.git@main:
+        title: Validate downloaded artifacts
+        is_always_run: true
+        inputs:
+        - files: |-
+            TEXT_FILE_TXT
+
+step_bundles:
+  cleanup:
+    steps:
+    - script:
+        inputs:
+        - content: |-
+            #!/bin/env bash
+            set -ex
+            rm -rf ./_artifact_pull
+            envman unset --key EXAMPLE_CSV
+            envman unset --key EXPORT_OPTIONS_PLIST
+            envman unset --key TEST_JSON
+            envman unset --key TEXT_FILE_TXT
+            envman unset --key LARGEFILE
+            envman unset --key ARCHIVE_ZIP
+            envman unset --key ARCHIVE_LAYOUT
+            envman unset --key ARCHIVE_TAR

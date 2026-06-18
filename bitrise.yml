@@ -1,6 +1,11 @@
 format_version: "11"
 default_step_lib_source: https://github.com/bitrise-io/bitrise-steplib.git
 
+include:
+- repository: steps-check
+  branch: master
+  path: steps.bitrise.yml
+
 workflows:
   sample:
     envs:
@@ -13,16 +18,6 @@ workflows:
         inputs:
         - verbose: true
         - artifact_sources: .*
-
-  check:
-    steps:
-    - git::https://github.com/bitrise-steplib/steps-check.git: { }
-
-  e2e:
-    steps:
-    - git::https://github.com/bitrise-steplib/steps-check.git:
-        inputs:
-        - workflow: e2e
 
   generate_readme:
     steps:

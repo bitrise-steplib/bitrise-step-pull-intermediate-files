@@ -2,9 +2,13 @@ package downloader
 
 import (
 	"context"
+	"encoding/base64"
+	"encoding/binary"
 	"errors"
 	"fmt"
+	"hash/crc32"
 	"io"
+	"io/fs"
 	"net"
 	"net/http"
 	"net/url"
@@ -175,7 +179,39 @@ func (ad *ConcurrentArtifactDownloader) downloadFile(targetDir, fileName, downlo
 		Hostname: extractHost(downloadURL),
 	}
 
+	ad.logCRC32C(fileFullPath)
+
 	return fileFullPath, details, nil
+}
+
+// logCRC32C computes and logs the CRC32C (Castagnoli) checksum of the downloaded file, as a record
+// of the fetched bytes' integrity. It is purely diagnostic: failures are logged, never returned.
+func (ad *ConcurrentArtifactDownloader) logCRC32C(path string) {
+	crc, err := fileCRC32C(os.DirFS(filepath.Dir(path)), filepath.Base(path))
+	if err != nil {
+		ad.Logger.Warnf("Failed to compute CRC32C of %s: %s", filepath.Base(path), err)
+		return
+	}
+	ad.Logger.Printf("CRC32C for %s: %s", filepath.Base(path), crc)
+}
+
+// fileCRC32C returns the named file's CRC32C (Castagnoli) checksum, base64-encoded big-endian — the
+// same representation S3/R2 (x-amz-checksum-crc32c) and GCS (x-goog-hash crc32c) use.
+func fileCRC32C(fsys fs.FS, name string) (sum string, err error) {
+	f, err := fsys.Open(name)
+	if err != nil {
+		return "", err
+	}
+	defer func() { err = errors.Join(err, f.Close()) }()
+
+	h := crc32.New(crc32.MakeTable(crc32.Castagnoli))
+	if _, err := io.Copy(h, f); err != nil {
+		return "", err
+	}
+
+	var buf [crc32.Size]byte
+	binary.BigEndian.PutUint32(buf[:], h.Sum32())
+	return base64.StdEncoding.EncodeToString(buf[:]), nil
 }
 
 func (ad *ConcurrentArtifactDownloader) downloadAndExtractZipArchive(targetDir, fileName, downloadURL string) (string, TransferDetails, error) {

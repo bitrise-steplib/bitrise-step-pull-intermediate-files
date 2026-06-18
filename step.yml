@@ -1,4 +1,3 @@
----
 title: Pull Pipeline intermediate files
 summary: The Step downloads Pipeline intermediate files to a local folder.
 description: |-
