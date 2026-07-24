@@ -3,6 +3,7 @@ package downloader
 import (
 	"archive/zip"
 	"bytes"
+	"context"
 	"fmt"
 	"net/http"
 	"net/http/httptest"
@@ -13,6 +14,7 @@ import (
 	"testing/fstest"
 	"time"
 
+	"github.com/bitrise-io/go-utils/v2/filedownloader"
 	"github.com/bitrise-io/go-utils/v2/log"
 	"github.com/bitrise-io/go-utils/v2/pathutil"
 	"github.com/bitrise-steplib/bitrise-step-pull-intermediate-files/api"
@@ -280,4 +282,40 @@ func Test_DownloadAndSaveTarDirectoryArtifacts(t *testing.T) {
 
 	cmd.AssertExpectations(t)
 	cmdFactory.AssertExpectations(t)
+}
+
+// The single-threaded fallback in downloadFile (triggered on a 416 or "unexpected EOF" from the
+// multi-threaded got-based download) only reaches go-utils/v2/filedownloader after several minutes of
+// real retry backoff in downloadWithRetry, so it isn't covered by exercising downloadFile end-to-end.
+// These two tests cover it directly, the same way downloadFile constructs and calls it.
+func Test_FallbackFileDownloader_Succeeds(t *testing.T) {
+	svr := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		_, _ = fmt.Fprint(w, "single-threaded fallback content")
+	}))
+	defer svr.Close()
+
+	dest := filepath.Join(getDownloadDir(t), "out.txt")
+
+	fileDownloader := filedownloader.NewDownloaderWithClient(svr.Client(), log.NewLogger())
+	err := fileDownloader.Download(context.Background(), dest, svr.URL)
+	assert.NoError(t, err)
+
+	content, err := os.ReadFile(dest)
+	assert.NoError(t, err)
+	assert.Equal(t, "single-threaded fallback content", string(content))
+}
+
+func Test_FallbackFileDownloader_ReturnsErrorOnFailedStatus(t *testing.T) {
+	svr := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusNotFound)
+	}))
+	defer svr.Close()
+
+	dest := filepath.Join(getDownloadDir(t), "out.txt")
+
+	fileDownloader := filedownloader.NewDownloaderWithClient(svr.Client(), log.NewLogger())
+	err := fileDownloader.Download(context.Background(), dest, svr.URL)
+
+	assert.Error(t, err)
+	assert.NoFileExists(t, dest)
 }
