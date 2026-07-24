@@ -20,12 +20,11 @@ import (
 
 	"github.com/bitrise-steplib/bitrise-step-pull-intermediate-files/api"
 
-	"github.com/bitrise-io/go-utils/filedownloader"
-	"github.com/bitrise-io/go-utils/pathutil"
-	"github.com/bitrise-io/go-utils/retry"
 	"github.com/bitrise-io/go-utils/v2/command"
+	"github.com/bitrise-io/go-utils/v2/filedownloader"
 	"github.com/bitrise-io/go-utils/v2/log"
-	pathutilv2 "github.com/bitrise-io/go-utils/v2/pathutil"
+	"github.com/bitrise-io/go-utils/v2/pathutil"
+	"github.com/bitrise-io/go-utils/v2/retry"
 	"github.com/bitrise-io/go-utils/v2/retryhttp"
 	"github.com/bitrise-io/go-utils/v2/ziputil"
 	"github.com/bitrise-io/got"
@@ -60,16 +59,18 @@ type ConcurrentArtifactDownloader struct {
 	Timeout        time.Duration
 	Logger         log.Logger
 	CommandFactory command.Factory
+	PathProvider   pathutil.PathProvider
 	// UseZipV2 selects the pure-Go ziputil.UnZip extractor over the legacy `unzip` CLI.
 	// Toggled by the BITRISE_STEP_PULL_ARTIFACT_USE_ZIP_V2 env var.
 	UseZipV2 bool
 }
 
-func NewConcurrentArtifactDownloader(timeout time.Duration, logger log.Logger, commandFactory command.Factory, useZipV2 bool) *ConcurrentArtifactDownloader {
+func NewConcurrentArtifactDownloader(timeout time.Duration, logger log.Logger, commandFactory command.Factory, pathProvider pathutil.PathProvider, useZipV2 bool) *ConcurrentArtifactDownloader {
 	return &ConcurrentArtifactDownloader{
 		Timeout:        timeout,
 		Logger:         logger,
 		CommandFactory: commandFactory,
+		PathProvider:   pathProvider,
 		UseZipV2:       useZipV2,
 	}
 }
@@ -160,8 +161,8 @@ func (ad *ConcurrentArtifactDownloader) downloadFile(targetDir, fileName, downlo
 
 			start = time.Now()
 
-			downloader := filedownloader.NewWithContext(ctx, retryhttp.NewClient(ad.Logger).StandardClient())
-			err = downloader.Get(fileFullPath, downloadURL)
+			downloader := filedownloader.NewDownloaderWithClient(retryhttp.NewClient(ad.Logger).StandardClient(), ad.Logger)
+			err = downloader.Download(ctx, fileFullPath, downloadURL)
 		}
 
 		if err != nil {
@@ -221,7 +222,7 @@ func fileCRC32C(fsys fs.FS, name string) (sum string, err error) {
 }
 
 func (ad *ConcurrentArtifactDownloader) downloadAndExtractZipArchive(targetDir, fileName, downloadURL string) (string, TransferDetails, error) {
-	tmpDir, err := pathutil.NormalizedOSTempDirPath("pull-intermediate-files")
+	tmpDir, err := ad.PathProvider.CreateTempDir("pull-intermediate-files")
 	if err != nil {
 		return "", TransferDetails{}, err
 	}
@@ -284,7 +285,7 @@ func (ad *ConcurrentArtifactDownloader) downloadAndExtractTarArchive(targetDir, 
 func (ad *ConcurrentArtifactDownloader) extractZipArchive(archivePath string, targetDir string) error {
 	if ad.UseZipV2 {
 		ad.Logger.Debugf("Extracting %s with ziputil v2 (pure Go)", archivePath)
-		zipManager := ziputil.NewZipManager(pathutilv2.NewPathChecker())
+		zipManager := ziputil.NewZipManager(pathutil.NewPathChecker())
 		return zipManager.UnZip(archivePath, targetDir)
 	}
 

@@ -13,8 +13,8 @@ import (
 	"testing/fstest"
 	"time"
 
-	"github.com/bitrise-io/go-utils/pathutil"
 	"github.com/bitrise-io/go-utils/v2/log"
+	"github.com/bitrise-io/go-utils/v2/pathutil"
 	"github.com/bitrise-steplib/bitrise-step-pull-intermediate-files/api"
 	"github.com/bitrise-steplib/bitrise-step-pull-intermediate-files/mocks"
 	"github.com/google/go-cmp/cmp"
@@ -25,7 +25,7 @@ import (
 
 func getDownloadDir(t *testing.T) string {
 	t.Helper()
-	tempPath, err := pathutil.NormalizedOSTempDirPath("_tmp")
+	tempPath, err := pathutil.NewPathProvider().CreateTempDir("_tmp")
 	assert.NoError(t, err)
 	t.Cleanup(func() { _ = os.RemoveAll(tempPath) })
 	return tempPath
@@ -54,7 +54,7 @@ func Test_DownloadAndSaveArtifacts(t *testing.T) {
 		})
 	}
 
-	artifactDownloader := NewConcurrentArtifactDownloader(5*time.Minute, log.NewLogger(), nil, false)
+	artifactDownloader := NewConcurrentArtifactDownloader(5*time.Minute, log.NewLogger(), nil, pathutil.NewPathProvider(), false)
 
 	downloadResults, err := artifactDownloader.DownloadAndSaveArtifacts(artifacts, targetDir)
 	assert.NoError(t, err)
@@ -106,7 +106,7 @@ func Test_DownloadAndSaveArtifacts_DownloadFails(t *testing.T) {
 		api.ArtifactResponseItemModel{DownloadURL: downloadURL, Title: "1.txt"})
 
 	// TODO: mock command factory
-	artifactDownloader := NewConcurrentArtifactDownloader(5*time.Minute, log.NewLogger(), nil, false)
+	artifactDownloader := NewConcurrentArtifactDownloader(5*time.Minute, log.NewLogger(), nil, pathutil.NewPathProvider(), false)
 
 	result, err := artifactDownloader.DownloadAndSaveArtifacts(artifacts, targetDir)
 
@@ -137,7 +137,7 @@ func Test_DownloadAndSaveArtifacts_RetriesFailingDownload(t *testing.T) {
 		{DownloadURL: svr.URL + "/1.txt", Title: "1.txt"},
 	}
 
-	artifactDownloader := NewConcurrentArtifactDownloader(5*time.Second, log.NewLogger(), nil, false)
+	artifactDownloader := NewConcurrentArtifactDownloader(5*time.Second, log.NewLogger(), nil, pathutil.NewPathProvider(), false)
 	_, err := artifactDownloader.DownloadAndSaveArtifacts(artifacts, targetDir)
 
 	assert.NoError(t, err)
@@ -169,7 +169,7 @@ func Test_DownloadAndSaveZipDirectoryArtifacts(t *testing.T) {
 	cmdFactory := new(mocks.Factory)
 	cmdFactory.On("Create", "unzip", mock.Anything, mock.Anything).Return(cmd).Once()
 
-	artifactDownloader := NewConcurrentArtifactDownloader(5*time.Minute, log.NewLogger(), cmdFactory, false)
+	artifactDownloader := NewConcurrentArtifactDownloader(5*time.Minute, log.NewLogger(), cmdFactory, pathutil.NewPathProvider(), false)
 
 	downloadResults, err := artifactDownloader.DownloadAndSaveArtifacts(artifacts, targetDir)
 	assert.NoError(t, err)
@@ -224,7 +224,7 @@ func Test_DownloadAndSaveZipDirectoryArtifacts_ZipV2(t *testing.T) {
 	// proving the v2 path bypasses it entirely.
 	cmdFactory := new(mocks.Factory)
 
-	artifactDownloader := NewConcurrentArtifactDownloader(5*time.Minute, log.NewLogger(), cmdFactory, true)
+	artifactDownloader := NewConcurrentArtifactDownloader(5*time.Minute, log.NewLogger(), cmdFactory, pathutil.NewPathProvider(), true)
 
 	downloadResults, err := artifactDownloader.DownloadAndSaveArtifacts(artifacts, targetDir)
 	assert.NoError(t, err)
@@ -266,7 +266,7 @@ func Test_DownloadAndSaveTarDirectoryArtifacts(t *testing.T) {
 	cmdFactory := new(mocks.Factory)
 	cmdFactory.On("Create", "tar", mock.Anything, mock.Anything).Return(cmd).Once()
 
-	artifactDownloader := NewConcurrentArtifactDownloader(5*time.Minute, log.NewLogger(), cmdFactory, false)
+	artifactDownloader := NewConcurrentArtifactDownloader(5*time.Minute, log.NewLogger(), cmdFactory, pathutil.NewPathProvider(), false)
 
 	downloadResults, err := artifactDownloader.DownloadAndSaveArtifacts(artifacts, targetDir)
 	assert.NoError(t, err)
