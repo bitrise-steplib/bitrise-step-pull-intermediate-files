@@ -60,17 +60,13 @@ type ConcurrentArtifactDownloader struct {
 	Timeout        time.Duration
 	Logger         log.Logger
 	CommandFactory command.Factory
-	// UseZipV2 selects the pure-Go ziputil.UnZip extractor over the legacy `unzip` CLI.
-	// Toggled by the BITRISE_STEP_PULL_ARTIFACT_USE_ZIP_V2 env var.
-	UseZipV2 bool
 }
 
-func NewConcurrentArtifactDownloader(timeout time.Duration, logger log.Logger, commandFactory command.Factory, useZipV2 bool) *ConcurrentArtifactDownloader {
+func NewConcurrentArtifactDownloader(timeout time.Duration, logger log.Logger, commandFactory command.Factory) *ConcurrentArtifactDownloader {
 	return &ConcurrentArtifactDownloader{
 		Timeout:        timeout,
 		Logger:         logger,
 		CommandFactory: commandFactory,
-		UseZipV2:       useZipV2,
 	}
 }
 
@@ -282,14 +278,8 @@ func (ad *ConcurrentArtifactDownloader) downloadAndExtractTarArchive(targetDir, 
 }
 
 func (ad *ConcurrentArtifactDownloader) extractZipArchive(archivePath string, targetDir string) error {
-	if ad.UseZipV2 {
-		ad.Logger.Debugf("Extracting %s with ziputil v2 (pure Go)", archivePath)
-		zipManager := ziputil.NewZipManager(pathutilv2.NewPathChecker())
-		return zipManager.UnZip(archivePath, targetDir)
-	}
-
-	cmd := ad.CommandFactory.Create("unzip", []string{"-o", archivePath}, &command.Opts{Dir: targetDir})
-	return ad.runExtractionCommand(cmd)
+	zipManager := ziputil.NewZipManager(pathutilv2.NewPathChecker())
+	return zipManager.UnZip(archivePath, targetDir)
 }
 
 func (ad *ConcurrentArtifactDownloader) extractTarArchive(r io.Reader, targetDir string) error {

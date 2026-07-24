@@ -54,7 +54,7 @@ func Test_DownloadAndSaveArtifacts(t *testing.T) {
 		})
 	}
 
-	artifactDownloader := NewConcurrentArtifactDownloader(5*time.Minute, log.NewLogger(), nil, false)
+	artifactDownloader := NewConcurrentArtifactDownloader(5*time.Minute, log.NewLogger(), nil)
 
 	downloadResults, err := artifactDownloader.DownloadAndSaveArtifacts(artifacts, targetDir)
 	assert.NoError(t, err)
@@ -106,7 +106,7 @@ func Test_DownloadAndSaveArtifacts_DownloadFails(t *testing.T) {
 		api.ArtifactResponseItemModel{DownloadURL: downloadURL, Title: "1.txt"})
 
 	// TODO: mock command factory
-	artifactDownloader := NewConcurrentArtifactDownloader(5*time.Minute, log.NewLogger(), nil, false)
+	artifactDownloader := NewConcurrentArtifactDownloader(5*time.Minute, log.NewLogger(), nil)
 
 	result, err := artifactDownloader.DownloadAndSaveArtifacts(artifacts, targetDir)
 
@@ -137,7 +137,7 @@ func Test_DownloadAndSaveArtifacts_RetriesFailingDownload(t *testing.T) {
 		{DownloadURL: svr.URL + "/1.txt", Title: "1.txt"},
 	}
 
-	artifactDownloader := NewConcurrentArtifactDownloader(5*time.Second, log.NewLogger(), nil, false)
+	artifactDownloader := NewConcurrentArtifactDownloader(5*time.Second, log.NewLogger(), nil)
 	_, err := artifactDownloader.DownloadAndSaveArtifacts(artifacts, targetDir)
 
 	assert.NoError(t, err)
@@ -145,54 +145,6 @@ func Test_DownloadAndSaveArtifacts_RetriesFailingDownload(t *testing.T) {
 }
 
 func Test_DownloadAndSaveZipDirectoryArtifacts(t *testing.T) {
-	svr := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		_, _ = fmt.Fprint(w, "dummy data")
-	}))
-	defer svr.Close()
-
-	targetDir := getDownloadDir(t)
-
-	downloadURL := fmt.Sprintf("%s/1.zip", svr.URL)
-	artifacts := []api.ArtifactResponseItemModel{
-		{
-			DownloadURL: downloadURL,
-			Title:       "1.zip",
-			IntermediateFileInfo: api.IntermediateFileInfo{
-				IsDir: true,
-			},
-		},
-	}
-
-	cmd := new(mocks.Command)
-	cmd.On("RunAndReturnTrimmedCombinedOutput").Return("", nil).Once()
-
-	cmdFactory := new(mocks.Factory)
-	cmdFactory.On("Create", "unzip", mock.Anything, mock.Anything).Return(cmd).Once()
-
-	artifactDownloader := NewConcurrentArtifactDownloader(5*time.Minute, log.NewLogger(), cmdFactory, false)
-
-	downloadResults, err := artifactDownloader.DownloadAndSaveArtifacts(artifacts, targetDir)
-	assert.NoError(t, err)
-
-	assert.Equal(t, 1, len(downloadResults))
-	assert.Equal(t, targetDir+"/1", downloadResults[0].DownloadPath)
-	assert.Equal(t, downloadURL, downloadResults[0].DownloadURL)
-	assert.Equal(t, "127.0.0.1", downloadResults[0].DownloadDetails.Hostname)
-	assert.Greater(t, downloadResults[0].DownloadDetails.Duration, time.Duration(0))
-	assert.Equal(t, int64(10), downloadResults[0].DownloadDetails.Size)
-
-	cmd.AssertExpectations(t)
-	cmdFactory.AssertExpectations(t)
-	assert.Len(t, cmdFactory.Calls, 1)
-	assert.Len(t, cmdFactory.Calls[0].Arguments, 3)
-	assert.IsType(t, []string{}, cmdFactory.Calls[0].Arguments[1])
-	unzipCmdArguments := cmdFactory.Calls[0].Arguments[1].([]string)
-	assert.Len(t, unzipCmdArguments, 2)
-	assert.Equal(t, "-o", unzipCmdArguments[0])
-}
-
-func Test_DownloadAndSaveZipDirectoryArtifacts_ZipV2(t *testing.T) {
-	// Build a real zip archive so the pure-Go ziputil.UnZip has valid input to extract.
 	var archive bytes.Buffer
 	zw := zip.NewWriter(&archive)
 	w, err := zw.Create("hello.txt")
@@ -220,11 +172,10 @@ func Test_DownloadAndSaveZipDirectoryArtifacts_ZipV2(t *testing.T) {
 		},
 	}
 
-	// A command factory with no expectations: invoking the `unzip` CLI here would fail the test,
-	// proving the v2 path bypasses it entirely.
+	// A command factory with no expectations: any shell-out during zip extraction would fail the test.
 	cmdFactory := new(mocks.Factory)
 
-	artifactDownloader := NewConcurrentArtifactDownloader(5*time.Minute, log.NewLogger(), cmdFactory, true)
+	artifactDownloader := NewConcurrentArtifactDownloader(5*time.Minute, log.NewLogger(), cmdFactory)
 
 	downloadResults, err := artifactDownloader.DownloadAndSaveArtifacts(artifacts, targetDir)
 	assert.NoError(t, err)
@@ -237,7 +188,7 @@ func Test_DownloadAndSaveZipDirectoryArtifacts_ZipV2(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, "hello world", string(extracted))
 
-	// The pure-Go extractor must not have shelled out to the `unzip` CLI.
+	// Zip extraction runs in-process, so the command factory is never used.
 	assert.Len(t, cmdFactory.Calls, 0)
 }
 
@@ -266,7 +217,7 @@ func Test_DownloadAndSaveTarDirectoryArtifacts(t *testing.T) {
 	cmdFactory := new(mocks.Factory)
 	cmdFactory.On("Create", "tar", mock.Anything, mock.Anything).Return(cmd).Once()
 
-	artifactDownloader := NewConcurrentArtifactDownloader(5*time.Minute, log.NewLogger(), cmdFactory, false)
+	artifactDownloader := NewConcurrentArtifactDownloader(5*time.Minute, log.NewLogger(), cmdFactory)
 
 	downloadResults, err := artifactDownloader.DownloadAndSaveArtifacts(artifacts, targetDir)
 	assert.NoError(t, err)
