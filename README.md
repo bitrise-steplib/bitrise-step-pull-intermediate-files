@@ -42,6 +42,171 @@ Add this step directly to your workflow in the [Bitrise Workflow Editor](https:/
 
 You can also run this step directly with [Bitrise CLI](https://github.com/bitrise-io/bitrise).
 
+#### Examples
+
+##### Graph pipeline
+
+###### Basic step config
+
+```yaml
+steps:
+- pull-intermediate-files@1:
+    inputs:
+    - verbose: "true"
+    - artifact_sources: build
+```
+
+Use the `artifact_sources` input variable to limit the downloads to a set of workflows. Simply specify the Workflow name directly — no stage prefix is needed:
+
+- `build` - Gets intermediate files from the 'build' Workflow.
+- `build,test` - Gets intermediate files from both the 'build' and 'test' Workflows.
+- `test.*` - Gets every intermediate file from all previous Workflows with names starting with 'test'.
+- `.*` - Gets every intermediate file from all previous Workflows.
+
+###### Wildcard based artifact pull
+
+During a pipeline, workflows receive the finished workflows object. Developers can find it on a build VM's environment variable: `BITRISEIO_FINISHED_WORKFLOWS`.
+
+Let's suppose that we get the following JSON object about the previously finished workflows.
+
+```json
+[
+  {
+    "external_id": "73d33fb5-35c6-495f-bd80-015ae681db33",
+    "finished_at": "2021-12-07T14:04:45Z",
+    "id": "b1c6f0a1-06e7-4f63-a172-ac541a467d71",
+    "name": "build",
+    "started_at": "2021-12-07T14:04:27Z",
+    "status": "succeeded"
+  },
+  {
+    "external_id": "39404bee-52ba-4ca2-8508-91489e7f6afa",
+    "finished_at": "2021-12-07T14:05:07Z",
+    "id": "f3bda7bb-37be-409f-9291-b377717cba60",
+    "name": "test",
+    "started_at": "2021-12-07T14:04:48Z",
+    "status": "succeeded"
+  },
+  {
+    "external_id": "ed0da0cf-66cc-4109-b23f-8a156d61b0c3",
+    "finished_at": "2021-12-07T14:06:41Z",
+    "id": "f572ca4e-2f06-40f1-a4cf-c208af15ff28",
+    "name": "deploy",
+    "started_at": "2021-12-07T14:06:13Z",
+    "status": "succeeded"
+  }
+]
+```
+
+As the key names in the object are self-describing, we will not cover those names except the `external_id`. The `external_id` is the build's slug in the PipelineService context.
+
+Let's see the following use-cases, the use cases first part is the demand, the second is the `artifact_sources` config:
+
+- As a developer, I would like to get the build artifact(s) of the _build_ workflow: `build`.
+
+- As a developer, I would like to get the build artifact(s) of both the _build_ and _test_ workflows: `build,test`. The two expressions are separated by a comma.
+
+- As a developer, I would like to retrieve already generated artifacts from all previous workflows: `.*`. As the example shows, developers can use regex.
+
+- As a developer, I would like to get artifacts from all workflows whose names start with _test_: `test.*`.
+
+And so on. The syntax is: `{workflow-name}`.
+Do not forget to escape the special characters when using a regex pattern.
+
+---
+
+##### Staged pipeline
+
+###### Basic step config
+
+```yaml
+steps:
+- pull-intermediate-files@1:
+    inputs:
+    - verbose: "true"
+    - artifact_sources: stage-1\..*
+```
+
+Use the `artifact_sources` input variable to limit the downloads to a set of stages or workflows:
+
+- `stage1.workflow1` - Gets the artifacts from the stage1's workflow1.
+- `stage1\..*` - Gets all artifacts from the stage1's workflows.
+- `.*\.workflow1` - Gets workflow1s' artifacts from the previous stages.
+- `.*` - Gets every generated artifacts from the previous stages.
+
+###### Wildcard based artifact pull
+
+During a pipeline, workflows receive the finished stages and workflows object. Developers can find it on a build VM's environment variable: `BITRISEIO_FINISHED_STAGES`.
+
+Let's suppose that we get the following JSON object about the previously finished stages and workflows.
+
+```json
+[
+  {
+    "id": "083aa861-55b1-4132-ba70-0dfcd48fe929",
+    "name": "stage-1",
+    "workflows": [
+      {
+        "external_id": "73d33fb5-35c6-495f-bd80-015ae681db33",
+        "finished_at": "2021-12-07T14:04:45Z",
+        "id": "b1c6f0a1-06e7-4f63-a172-ac541a467d71",
+        "name": "placeholder",
+        "started_at": "2021-12-07T14:04:27Z",
+        "status": "succeeded"
+      },
+      {
+        "external_id": "39404bee-52ba-4ca2-8508-91489e7f6afa",
+        "finished_at": "2021-12-07T14:05:07Z",
+        "id": "f3bda7bb-37be-409f-9291-b377717cba60",
+        "name": "textfile_generator",
+        "started_at": "2021-12-07T14:04:48Z",
+        "status": "succeeded"
+      }
+    ]
+  },
+  {
+    "id": "4919fe0e-877a-45ca-ab25-7da2ddf54bce",
+    "name": "stage-2",
+    "workflows": [
+      {
+        "external_id": "ed0da0cf-66cc-4109-b23f-8a156d61b0c3",
+        "finished_at": "2021-12-07T14:06:41Z",
+        "id": "f572ca4e-2f06-40f1-a4cf-c208af15ff28",
+        "name": "deployer",
+        "started_at": "2021-12-07T14:06:13Z",
+        "status": "succeeded"
+      },
+      {
+        "external_id": "05130ce4-825b-4ca1-a9be-4f54413e5dcd",
+        "finished_at": "2021-12-07T14:07:04Z",
+        "id": "861fd1be-48b1-4a6b-ae4c-ee5449eaa6b6",
+        "name": "textfile_generator",
+        "started_at": "2021-12-07T14:06:45Z",
+        "status": "succeeded"
+      }
+    ]
+  }
+]
+```
+
+As the key names in the object are self-describing, we will not cover those names except the `external_id`. The `external_id` is the build's slug in the PipelineService context.
+
+Let's see the following use-cases, the use cases first part is the demand, the second is the `artifact_sources` config:
+
+- As a developer, I would like to get the build artifact(s) of the _stage-1_'s _placeholder_'s workflow: `stage-1.placeholder`.
+
+- As a developer, I would like to get the build artifact(s) of the _stage-2_'s _deployer_'s workflow and the _stage-1_'s _placeholder_'s workflow: `stage-1.placeholder,stage-2.deployer`. The two expressions are separated by a comma.
+
+- As a developer, I would like to retrieve already generated artifacts: `.*`. As the example shows, developers can use regex.
+
+- As a developer, I would like to retrieve the generated artifacts from the _stage-2_ stage: `stage-2\..*`.
+
+- As a developer, I would like to get the _textfile_generator_ workflow artifacts: `.*\.textfile_generator`
+
+And so on. The syntax is: `{stage-name}.{workflow-name}`.
+Do not forget to escape the special characters when using a regex pattern.
+
+
 ## ⚙️ Configuration
 
 <details>
@@ -68,6 +233,8 @@ There are no outputs defined in this step
 We welcome [pull requests](https://github.com/bitrise-steplib/bitrise-step-pull-intermediate-files/pulls) and [issues](https://github.com/bitrise-steplib/bitrise-step-pull-intermediate-files/issues) against this repository.
 
 For pull requests, work on your changes in a forked repository and use the Bitrise CLI to [run step tests locally](https://docs.bitrise.io/en/bitrise-ci/bitrise-cli/running-your-first-local-build-with-the-cli.html).
+
+Note: this step's end-to-end tests (defined in e2e/bitrise.yml) are working with secrets which are intentionally not stored in this repo. External contributors won't be able to run those tests. Don't worry, if you open a PR with your contribution, we will help with running tests and make sure that they pass.
 
 Learn more about developing steps:
 
