@@ -63,6 +63,9 @@ type ConcurrentArtifactDownloader struct {
 	// UseZipV2 selects the pure-Go ziputil.UnZip extractor over the legacy `unzip` CLI.
 	// Toggled by the BITRISE_STEP_PULL_ARTIFACT_USE_ZIP_V2 env var.
 	UseZipV2 bool
+	// retrySleeper waits between download retries. Nil means the real time.Sleep;
+	// tests override it to exercise the retry and fallback paths without the wall-clock cost.
+	retrySleeper retry.Sleeper
 }
 
 func NewConcurrentArtifactDownloader(timeout time.Duration, logger log.Logger, commandFactory command.Factory, pathProvider pathutil.PathProvider, useZipV2 bool) *ConcurrentArtifactDownloader {
@@ -148,7 +151,7 @@ func (ad *ConcurrentArtifactDownloader) downloadFile(targetDir, fileName, downlo
 
 	start := time.Now()
 
-	err := downloadWithRetry(ctx, ad.createClient(), downloadURL, fileFullPath, ad.Logger)
+	err := downloadWithRetry(ctx, ad.createClient(), downloadURL, fileFullPath, ad.Logger, ad.retrySleeper)
 	if err != nil {
 		// fallback to single threaded download - the error with the 416 status code seems to happen for 0 size files with got
 		errorMessage := err.Error()
@@ -363,8 +366,9 @@ func fileSize(path string) int64 {
 	return f.Size()
 }
 
-func downloadWithRetry(ctx context.Context, httpClient *retryablehttp.Client, url, dest string, logger log.Logger) error {
-	return retry.Times(5).Wait(5 * time.Second).TryWithAbort(func(attempt uint) (error, bool) {
+func downloadWithRetry(ctx context.Context, httpClient *retryablehttp.Client, url, dest string, logger log.Logger, sleeper retry.Sleeper) error {
+	// retry.New falls back to the real time.Sleep when sleeper is nil.
+	return retry.New(5, 5*time.Second, sleeper).TryWithAbort(func(attempt uint) (error, bool) {
 		if attempt != 0 {
 			logger.Debugf("Retrying intermediate file download... (attempt %d)", attempt+1)
 		}
