@@ -9,6 +9,7 @@ import (
 	"github.com/bitrise-io/go-utils/v2/command"
 	"github.com/bitrise-io/go-utils/v2/env"
 	"github.com/bitrise-io/go-utils/v2/log"
+	"github.com/bitrise-io/go-utils/v2/pathutil"
 	"github.com/bitrise-steplib/bitrise-step-pull-intermediate-files/step"
 )
 
@@ -50,6 +51,7 @@ func createIntermediateFileDownloader(logger log.Logger) step.IntermediateFileDo
 	envRepository := stepenv.NewRepository(env.NewRepository())
 	cmdFactory := command.NewFactory(envRepository)
 	inputParser := stepconf.NewInputParser(envRepository)
+	pathProvider := pathutil.NewPathProvider()
 
-	return step.NewIntermediateFileDownloader(inputParser, envRepository, cmdFactory, logger)
+	return step.NewIntermediateFileDownloader(inputParser, envRepository, cmdFactory, pathProvider, logger)
 }

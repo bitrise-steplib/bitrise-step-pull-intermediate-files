@@ -8,10 +8,10 @@ import (
 	"time"
 
 	"github.com/bitrise-io/go-steputils/v2/stepconf"
-	"github.com/bitrise-io/go-utils/pathutil"
 	"github.com/bitrise-io/go-utils/v2/command"
 	"github.com/bitrise-io/go-utils/v2/env"
 	"github.com/bitrise-io/go-utils/v2/log"
+	"github.com/bitrise-io/go-utils/v2/pathutil"
 	"github.com/bitrise-steplib/bitrise-step-pull-intermediate-files/api"
 	"github.com/bitrise-steplib/bitrise-step-pull-intermediate-files/downloader"
 	"github.com/bitrise-steplib/bitrise-step-pull-intermediate-files/export"
@@ -50,11 +50,12 @@ type IntermediateFileDownloader struct {
 	inputParser   stepconf.InputParser
 	envRepository env.Repository
 	cmdFactory    command.Factory
+	pathProvider  pathutil.PathProvider
 	logger        log.Logger
 }
 
-func NewIntermediateFileDownloader(inputParser stepconf.InputParser, envRepository env.Repository, cmdFactory command.Factory, logger log.Logger) IntermediateFileDownloader {
-	return IntermediateFileDownloader{inputParser: inputParser, envRepository: envRepository, cmdFactory: cmdFactory, logger: logger}
+func NewIntermediateFileDownloader(inputParser stepconf.InputParser, envRepository env.Repository, cmdFactory command.Factory, pathProvider pathutil.PathProvider, logger log.Logger) IntermediateFileDownloader {
+	return IntermediateFileDownloader{inputParser: inputParser, envRepository: envRepository, cmdFactory: cmdFactory, pathProvider: pathProvider, logger: logger}
 }
 
 func (d IntermediateFileDownloader) ProcessConfig() (Config, error) {
@@ -123,13 +124,13 @@ func (d IntermediateFileDownloader) Run(cfg Config) (Result, error) {
 
 	d.logger.Printf("Downloading %d artifacts", len(artifacts))
 
-	targetDir, err := pathutil.NormalizedOSTempDirPath(downloadDirPrefix)
+	targetDir, err := d.pathProvider.CreateTempDir(downloadDirPrefix)
 	if err != nil {
 		return Result{}, fmt.Errorf("failed to create artifact download directory: %w", err)
 	}
 
 	useZipV2 := d.envRepository.Get("BITRISE_STEP_PULL_ARTIFACT_USE_ZIP_V2") == "true"
-	artifactDownloader := downloader.NewConcurrentArtifactDownloader(5*time.Minute, d.logger, d.cmdFactory, useZipV2)
+	artifactDownloader := downloader.NewConcurrentArtifactDownloader(5*time.Minute, d.logger, d.cmdFactory, d.pathProvider, useZipV2)
 	downloadResults, err := artifactDownloader.DownloadAndSaveArtifacts(artifacts, targetDir)
 	if err != nil {
 		return Result{}, fmt.Errorf("failed to download artifacts: %w", err)

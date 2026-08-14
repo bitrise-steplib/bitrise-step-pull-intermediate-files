@@ -13,8 +13,8 @@ import (
 	"testing/fstest"
 	"time"
 
-	"github.com/bitrise-io/go-utils/pathutil"
 	"github.com/bitrise-io/go-utils/v2/log"
+	"github.com/bitrise-io/go-utils/v2/pathutil"
 	"github.com/bitrise-steplib/bitrise-step-pull-intermediate-files/api"
 	"github.com/bitrise-steplib/bitrise-step-pull-intermediate-files/mocks"
 	"github.com/google/go-cmp/cmp"
@@ -25,11 +25,17 @@ import (
 
 func getDownloadDir(t *testing.T) string {
 	t.Helper()
-	tempPath, err := pathutil.NormalizedOSTempDirPath("_tmp")
+	tempPath, err := pathutil.NewPathProvider().CreateTempDir("_tmp")
 	assert.NoError(t, err)
 	t.Cleanup(func() { _ = os.RemoveAll(tempPath) })
 	return tempPath
 }
+
+// noopSleeper skips downloadWithRetry's 5x5s backoff, so tests that deliberately exhaust the
+// download retries don't spend that time on the wall clock.
+type noopSleeper struct{}
+
+func (noopSleeper) Sleep(time.Duration) {}
 
 func Test_DownloadAndSaveArtifacts(t *testing.T) {
 	svr := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -54,7 +60,7 @@ func Test_DownloadAndSaveArtifacts(t *testing.T) {
 		})
 	}
 
-	artifactDownloader := NewConcurrentArtifactDownloader(5*time.Minute, log.NewLogger(), nil, false)
+	artifactDownloader := NewConcurrentArtifactDownloader(5*time.Minute, log.NewLogger(), nil, pathutil.NewPathProvider(), false)
 
 	downloadResults, err := artifactDownloader.DownloadAndSaveArtifacts(artifacts, targetDir)
 	assert.NoError(t, err)
@@ -106,7 +112,8 @@ func Test_DownloadAndSaveArtifacts_DownloadFails(t *testing.T) {
 		api.ArtifactResponseItemModel{DownloadURL: downloadURL, Title: "1.txt"})
 
 	// TODO: mock command factory
-	artifactDownloader := NewConcurrentArtifactDownloader(5*time.Minute, log.NewLogger(), nil, false)
+	artifactDownloader := NewConcurrentArtifactDownloader(5*time.Minute, log.NewLogger(), nil, pathutil.NewPathProvider(), false)
+	artifactDownloader.retrySleeper = noopSleeper{}
 
 	result, err := artifactDownloader.DownloadAndSaveArtifacts(artifacts, targetDir)
 
@@ -137,7 +144,9 @@ func Test_DownloadAndSaveArtifacts_RetriesFailingDownload(t *testing.T) {
 		{DownloadURL: svr.URL + "/1.txt", Title: "1.txt"},
 	}
 
-	artifactDownloader := NewConcurrentArtifactDownloader(5*time.Second, log.NewLogger(), nil, false)
+	artifactDownloader := NewConcurrentArtifactDownloader(5*time.Second, log.NewLogger(), nil, pathutil.NewPathProvider(), false)
+	artifactDownloader.retrySleeper = noopSleeper{}
+
 	_, err := artifactDownloader.DownloadAndSaveArtifacts(artifacts, targetDir)
 
 	assert.NoError(t, err)
@@ -169,7 +178,7 @@ func Test_DownloadAndSaveZipDirectoryArtifacts(t *testing.T) {
 	cmdFactory := new(mocks.Factory)
 	cmdFactory.On("Create", "unzip", mock.Anything, mock.Anything).Return(cmd).Once()
 
-	artifactDownloader := NewConcurrentArtifactDownloader(5*time.Minute, log.NewLogger(), cmdFactory, false)
+	artifactDownloader := NewConcurrentArtifactDownloader(5*time.Minute, log.NewLogger(), cmdFactory, pathutil.NewPathProvider(), false)
 
 	downloadResults, err := artifactDownloader.DownloadAndSaveArtifacts(artifacts, targetDir)
 	assert.NoError(t, err)
@@ -224,7 +233,7 @@ func Test_DownloadAndSaveZipDirectoryArtifacts_ZipV2(t *testing.T) {
 	// proving the v2 path bypasses it entirely.
 	cmdFactory := new(mocks.Factory)
 
-	artifactDownloader := NewConcurrentArtifactDownloader(5*time.Minute, log.NewLogger(), cmdFactory, true)
+	artifactDownloader := NewConcurrentArtifactDownloader(5*time.Minute, log.NewLogger(), cmdFactory, pathutil.NewPathProvider(), true)
 
 	downloadResults, err := artifactDownloader.DownloadAndSaveArtifacts(artifacts, targetDir)
 	assert.NoError(t, err)
@@ -266,7 +275,7 @@ func Test_DownloadAndSaveTarDirectoryArtifacts(t *testing.T) {
 	cmdFactory := new(mocks.Factory)
 	cmdFactory.On("Create", "tar", mock.Anything, mock.Anything).Return(cmd).Once()
 
-	artifactDownloader := NewConcurrentArtifactDownloader(5*time.Minute, log.NewLogger(), cmdFactory, false)
+	artifactDownloader := NewConcurrentArtifactDownloader(5*time.Minute, log.NewLogger(), cmdFactory, pathutil.NewPathProvider(), false)
 
 	downloadResults, err := artifactDownloader.DownloadAndSaveArtifacts(artifacts, targetDir)
 	assert.NoError(t, err)
@@ -280,4 +289,65 @@ func Test_DownloadAndSaveTarDirectoryArtifacts(t *testing.T) {
 
 	cmd.AssertExpectations(t)
 	cmdFactory.AssertExpectations(t)
+}
+
+// got probes the file with a `Range: bytes=0-0` request before downloading. A server answering that
+// probe with 416 is what makes downloadFile give up on the multi-threaded download and fall back to
+// the single-threaded one — the real-world 0-byte-file case the fallback exists for.
+func Test_DownloadFile_FallsBackToSingleThreadedDownloadOn416(t *testing.T) {
+	var rangeRequests, plainRequests atomic.Int32
+	svr := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Header.Get("Range") != "" {
+			rangeRequests.Add(1)
+			w.WriteHeader(http.StatusRequestedRangeNotSatisfiable)
+			return
+		}
+		plainRequests.Add(1)
+		_, _ = fmt.Fprint(w, "single-threaded fallback content")
+	}))
+	defer svr.Close()
+
+	targetDir := getDownloadDir(t)
+
+	artifactDownloader := NewConcurrentArtifactDownloader(5*time.Minute, log.NewLogger(), nil, pathutil.NewPathProvider(), false)
+	artifactDownloader.retrySleeper = noopSleeper{}
+
+	path, details, err := artifactDownloader.downloadFile(targetDir, "1.txt", svr.URL+"/1.txt")
+	assert.NoError(t, err)
+
+	assert.Equal(t, filepath.Join(targetDir, "1.txt"), path)
+	assert.Equal(t, int64(len("single-threaded fallback content")), details.Size)
+	assert.Equal(t, "127.0.0.1", details.Hostname)
+
+	content, err := os.ReadFile(path)
+	assert.NoError(t, err)
+	assert.Equal(t, "single-threaded fallback content", string(content))
+
+	// The multi-threaded download was attempted (and exhausted its retries) before the fallback ran.
+	assert.Greater(t, rangeRequests.Load(), int32(1))
+	assert.Equal(t, int32(1), plainRequests.Load())
+}
+
+func Test_DownloadFile_ReturnsErrorWhenFallbackAlsoFails(t *testing.T) {
+	svr := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Header.Get("Range") != "" {
+			w.WriteHeader(http.StatusRequestedRangeNotSatisfiable)
+			return
+		}
+		w.WriteHeader(http.StatusNotFound)
+	}))
+	defer svr.Close()
+
+	targetDir := getDownloadDir(t)
+	downloadURL := svr.URL + "/1.txt"
+
+	artifactDownloader := NewConcurrentArtifactDownloader(5*time.Minute, log.NewLogger(), nil, pathutil.NewPathProvider(), false)
+	artifactDownloader.retrySleeper = noopSleeper{}
+
+	path, details, err := artifactDownloader.downloadFile(targetDir, "1.txt", downloadURL)
+
+	assert.ErrorContains(t, err, "unable to download file from "+downloadURL)
+	assert.Empty(t, path)
+	assert.Equal(t, "127.0.0.1", details.Hostname)
+	assert.NoFileExists(t, filepath.Join(targetDir, "1.txt"))
 }
